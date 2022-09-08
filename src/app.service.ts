@@ -9,7 +9,7 @@ export class AppService {
     return users;
   }
 
-  async createUser(data) : Promise<object> {
+  async createUser(data ) : Promise<object> {
     const user = new User();
     user.username = data.username;
     user.age = data.age;
