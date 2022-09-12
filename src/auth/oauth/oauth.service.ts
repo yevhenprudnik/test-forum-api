@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
 import { Repository } from 'typeorm';
@@ -21,17 +21,20 @@ export class OauthService {
   async oauthHandler(profile: any){
     const user = await this.usersRepository
     .createQueryBuilder('user')
-    .where(`user.oauth ::jsonb @> \'{"id":"${ profile.id }"}\'`)
+    .where(`user.oauth ::jsonb @> \'{"id":"${profile.id}"}\'`)
     .getOne();
   if(user){
-    await this.sessionHandler.createSession(user);
-    
     return user;
   } else {
       const username = profile.displayName.toLocaleLowerCase().replace(/\s/g, '');
       const candidateByUsername = await this.usersRepository.findOneBy({ username });
       if (candidateByUsername){
         throw new BadRequestException(`Looks like username ${username} is already taken, please try common method of registration and come up with different username`);
+      }
+
+      const candidateByEmail = await this.usersRepository.findOneBy({ email : profile.emails[0].value });
+      if (candidateByEmail){
+        throw new BadRequestException(`Looks like username with email ${profile.emails[0].value} have already been registered via another authentication method. Please use your initial type of authentication`);
       }
 
       const emailConfirmationLink = randomUUID();
@@ -51,11 +54,18 @@ export class OauthService {
       const user = await this.usersRepository.save(newUser);
       
       await this.mailerService.sendActivationEmail(profile.emails[0].value, emailConfirmationLink);
-
-      await this.sessionHandler.createSession(newUser);
       
       return user;
   }
+  }
+
+  async generateSession(request, parsedUA){
+    if (!request.user) {
+      throw new UnauthorizedException('Authorization failed')
+    }
+    const tokens = await this.sessionHandler.createSession(request.user, parsedUA);
+
+    return tokens;
   }
 
 }

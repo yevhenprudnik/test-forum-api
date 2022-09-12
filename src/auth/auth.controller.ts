@@ -1,22 +1,27 @@
-import { Body, Controller, Get, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Res, UseGuards, Headers, Query } from '@nestjs/common';
 import { RegisterDto } from '../dtos/register.dto';
 import { LoginDto } from '../dtos/login.dto';
 import { AuthService } from './auth.service';
 import { TokenAuthGuard } from './guards/token.auth.guard';
 import { AuthGuard } from '@nestjs/passport';
 import { SessionHandler } from './handlers/session.handler';
+import * as parser  from 'ua-parser-js';
+import { OauthService } from './oauth/oauth.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly sessionHandler: SessionHandler
+    private readonly sessionHandler: SessionHandler,
+    private readonly oauthService: OauthService
 ) {}
 
   @Post('register')
-  async register(@Body() userDto: RegisterDto, @Res({ passthrough: true }) response){
+  async register(@Body() userDto: RegisterDto, @Headers('User-Agent') headers, @Res({ passthrough: true }) response){
 
-    const { refreshToken, ...rest } = await this.authService.register(userDto);
+    const parsedUA = parser(headers);
+
+    const { refreshToken, ...rest } = await this.authService.register(userDto, parsedUA);
 
     response.cookie( 'refreshToken', refreshToken );
     
@@ -24,8 +29,11 @@ export class AuthController {
   }
 
   @Post('logIn')
-  async logIn(@Body() userDto: LoginDto, @Res({ passthrough: true }) response){
-    const { refreshToken, ...rest } = await this.authService.logIn(userDto);
+  async logIn(@Body() userDto: LoginDto, @Res({ passthrough: true }) response, @Headers('User-Agent') headers){
+
+    const parsedUA = parser(headers);
+
+    const { refreshToken, ...rest } = await this.authService.logIn(userDto, parsedUA);
 
     response.cookie( 'refreshToken', refreshToken );
 
@@ -34,8 +42,9 @@ export class AuthController {
 
   @Get('logOut')
   @UseGuards(TokenAuthGuard)
-  logOut(@Req() request): object{
-    return this.sessionHandler.removeSession(request.user.id);
+  logOut(@Req() request, @Headers('User-Agent') headers, @Query('id') id): object{
+    const parsedUA = parser(headers);
+    return this.sessionHandler.removeSession(request.user.id, parsedUA, id);
   }
 
   @Get('activateEmail/:link')
@@ -51,42 +60,52 @@ export class AuthController {
   }
 
   @Get('refresh')
-  async refresh(@Req() request, @Res({ passthrough: true }) response){
+  async refresh(@Req() request, @Res({ passthrough: true }) response, @Headers('User-Agent') headers){
     const tokenFromUser = request.cookies.refreshToken;
+    const parsedUA = parser(headers);
 
-    const { refreshToken, ...rest } = await this.authService.refreshSession(tokenFromUser);
+    const { refreshToken, ...rest } = await this.authService.refreshSession(tokenFromUser, parsedUA);
 
     response.cookie( 'refreshToken', refreshToken );
     return rest;
+  }
+
+  @Get('sessions')
+  @UseGuards(TokenAuthGuard)
+  getSession(@Req() request){
+    return this.sessionHandler.getAllSession(request.user.id);
   }
 
   @Get('oauth/google')
   @UseGuards(AuthGuard('google'))
-  async googleAuth(@Req() req){}
+  googleAuth(){}
 
   @Get('oauth/callback/google')
   @UseGuards(AuthGuard('google'))
-  async googleAuthRedirect(@Req() request, @Res({ passthrough: true }) response): Promise<object>{
+  async googleAuthRedirect(@Req() request, @Res({ passthrough: true }) response, @Headers('User-Agent') headers): Promise<object>{
 
-    const { refreshToken, ...rest } = await this.sessionHandler.getSession(request.user.id);
-
-    response.cookie( 'refreshToken', refreshToken );
+    const parsedUA = parser(headers);
+    const tokens = await this.oauthService.generateSession(request, parsedUA);
+    response.cookie( 'refreshToken', tokens.refreshToken );
     
-    return rest;
+    return {accessToken: tokens.accessToken, userId: request.user.id };
   }
 
   @Get('oauth/facebook')
   @UseGuards(AuthGuard('facebook'))
-  async facebookAuth(@Req() req){}
+  facebookAuth(){}
 
   @Get('oauth/callback/facebook')
   @UseGuards(AuthGuard('facebook'))
-  async facebookAuthRedirect(@Req() request, @Res({ passthrough: true }) response): Promise<object>{
+  async facebookAuthRedirect(
+    @Req() request, 
+    @Res({ passthrough: true }) response, 
+    @Headers('User-Agent') headers): Promise<object>{
 
-    const { refreshToken, ...rest } = await this.sessionHandler.getSession(request.user.id);
-
-    response.cookie( 'refreshToken', refreshToken );
+    const parsedUA = parser(headers);
+    const tokens = await this.oauthService.generateSession(request, parsedUA);
+    response.cookie( 'refreshToken', tokens.refreshToken );
     
-    return rest;
+    return {accessToken: tokens.accessToken, userId: request.user.id };
   }
 }

@@ -22,7 +22,7 @@ export class AuthService {
    * email, username, password, firstName, lastName
    * @returns object with user id and accessToken
    */
-  async register(userDto: RegisterDto){
+  async register(userDto: RegisterDto, parsedUA){
     const { username, email, password, firstName, lastName } = userDto;
     const candidate = await this.usersRepository.findOne({ where: [
       { email: email },
@@ -52,7 +52,7 @@ export class AuthService {
     
     await this.mailerService.sendActivationEmail(email, emailConfirmationLink);
 
-    const tokens = await this.sessionHandler.createSession(newUser);
+    const tokens = await this.sessionHandler.createSession(newUser, parsedUA);
 
     return { userId: newUser.id, ...tokens };
   }
@@ -62,7 +62,7 @@ export class AuthService {
    * email, password
    * @returns object with user id and accessToken
    */
-  async logIn(userDto: LoginDto){
+  async logIn(userDto: LoginDto, parsedUA){
     const { email, password } = userDto;
     const candidate = await this.usersRepository.findOneBy({ email });
 
@@ -77,7 +77,7 @@ export class AuthService {
       throw new HttpException("Wrong credentials", HttpStatus.BAD_REQUEST);
     }
 
-    const tokens = await this.sessionHandler.createSession(candidate);
+    const tokens = await this.sessionHandler.createSession(candidate, parsedUA);
 
     return { userId: candidate.id, ...tokens };
   }
@@ -86,13 +86,13 @@ export class AuthService {
    * Refresh token from cookies
    * @returns object with user id and accessToken
    */
-  async refreshSession(refreshToken: string){
+  async refreshSession(refreshToken: string, parsedUA){
     const user = await this.sessionHandler.validateToken(refreshToken);
     if (!user){
       throw new UnauthorizedException("Refresh token is not valid");
     }
 
-    const tokens = await this.sessionHandler.createSession(user);
+    const tokens = await this.sessionHandler.createSession(user, parsedUA);
 
     return { userId: user.id, ...tokens };
   }

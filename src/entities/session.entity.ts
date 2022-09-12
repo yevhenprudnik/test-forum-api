@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToOne, JoinColumn } from 'typeorm';
+import { deviceInterface } from 'src/interfaces/device.interface';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToOne, JoinColumn, ManyToOne } from 'typeorm';
 import { User } from './user.entity';
 
 @Entity()
@@ -6,7 +7,7 @@ export class Session {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @OneToOne(type => User) @JoinColumn()
+  @ManyToOne(type => User) @JoinColumn()
   user: User;
 
   @Column("text")
@@ -16,10 +17,9 @@ export class Session {
   refreshToken: string;
 
   @Column({
-    type: "text",
-    nullable: true
+    type: "jsonb",
   })
-  device: string;
+  device: deviceInterface;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -22,11 +22,9 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
       done: (err: any, user: any, info?: any) => void): Promise<any> {
         try {
           const user = await this.oauthService.oauthHandler(profile);
-      
           done(null, user);
         } catch (error) {
-          console.log(error);
-          return error;
+          done(error, null);
         }
     }
 }
