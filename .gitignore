@@ -38,3 +38,5 @@ lerna-debug.log*
 
 Dockerfile
 docker-compose.yml
+
+dm.drawio.svg
