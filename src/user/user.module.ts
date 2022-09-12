@@ -1,24 +1,22 @@
-import { User } from './auth/entities/user.entity';
+import { User } from '../entities/user.entity';
+import { Session } from '../entities/session.entity';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UsersModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
+import { UserController } from './user.controller';
+import { UserService } from './user.service';
+import { SessionHandler } from 'src/auth/handlers/session.handler';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ envFilePath : '.env' }),
-    TypeOrmModule.forRoot({
-      type: "postgres",
-      host: process.env.DB_HOST,
-      port: +process.env.DATABASE_PORT,
-      username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_DATABASE,
-      entities: [ User ],
-      synchronize: true,
-      logging: false,
-    }),
-    UsersModule
-  ]
+    TypeOrmModule.forFeature([ User, Session ]),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET
+    })
+  ],
+  controllers: [ UserController ],
+  providers: [ UserService, SessionHandler ]
 })
-export class AuthModule {}
+export class UserModule {}
