@@ -4,7 +4,7 @@ import { Session } from 'src/entities/session.entity';
 import { JwtService } from '@nestjs/jwt'; 
 import { Repository } from 'typeorm';
 import { User } from 'src/entities/user.entity';
-import hashFunction from '../../helpers/string.hash.henerator'
+import hashFunction from '../../helpers/string.hash.generator'
 
 @Injectable()
 export class SessionHandler {
@@ -14,8 +14,9 @@ export class SessionHandler {
     private jwt: JwtService
   ) {}
 
-  async createSession(user: User, parsedUA){
-    const hashed = hashFunction(parsedUA.ua);
+  async createSession(user: User, systemInfo){
+  
+    const hashed = hashFunction(systemInfo.ua);
     const userSession = await this.sessionRepository
       .createQueryBuilder("session")
       .innerJoinAndSelect("session.user", "user")
@@ -40,9 +41,9 @@ export class SessionHandler {
       user,
       device: {
         sessionId: hashed,
-        os: parsedUA.os.name,
-        type: parsedUA.device.type || 'Browser',
-        model: parsedUA.device.model
+        os: systemInfo.os.name,
+        type: systemInfo.device.type || 'Browser',
+        model: systemInfo.device.model
       }
     })
     await this.sessionRepository.save(newSession);
@@ -94,9 +95,10 @@ export class SessionHandler {
       return userSessions;
   }
 
-  async removeSession(userId: number, parsedUA, sessionId?){
+  async removeSession(userId: number, systemInfo, sessionId?){
+
     if (!sessionId){
-      sessionId = hashFunction(parsedUA.ua);
+      sessionId = hashFunction(systemInfo.ua);
     }
     const userSession = await this.sessionRepository
       .createQueryBuilder("session")

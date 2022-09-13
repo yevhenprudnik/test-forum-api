@@ -1,5 +1,5 @@
 import { deviceInterface } from 'src/interfaces/device.interface';
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToOne, JoinColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, JoinColumn, ManyToOne } from 'typeorm';
 import { User } from './user.entity';
 
 @Entity()

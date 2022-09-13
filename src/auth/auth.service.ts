@@ -1,9 +1,7 @@
 import { BadRequestException, HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
-import { RegisterDto } from '../dtos/register.dto';
-import { LoginDto } from '../dtos/login.dto';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { SessionHandler } from './handlers/session.handler';
@@ -18,12 +16,12 @@ export class AuthService {
     private mailerService: EmailHandler
   ) {}
   /**
-   * @param  {RegisterDto} userDto
+   * @param  userDefinition
    * email, username, password, firstName, lastName
    * @returns object with user id and accessToken
    */
-  async register(userDto: RegisterDto, parsedUA){
-    const { username, email, password, firstName, lastName } = userDto;
+  async register(userDefinition: DeepPartial<User>, systemInfo){
+    const { username, email, password, firstName, lastName } = userDefinition;
     const candidate = await this.usersRepository.findOne({ where: [
       { email: email },
       { username: username }
@@ -52,18 +50,18 @@ export class AuthService {
     
     await this.mailerService.sendActivationEmail(email, emailConfirmationLink);
 
-    const tokens = await this.sessionHandler.createSession(newUser, parsedUA);
+    const tokens = await this.sessionHandler.createSession(newUser, systemInfo);
 
     return { userId: newUser.id, ...tokens };
   }
   
   /**
-   * @param  {LoginDto} userDto
+   * @param  userDefinition
    * email, password
    * @returns object with user id and accessToken
    */
-  async logIn(userDto: LoginDto, parsedUA){
-    const { email, password } = userDto;
+  async logIn(userDefinition: DeepPartial<User>, systemInfo){
+    const { email, password } = userDefinition;
     const candidate = await this.usersRepository.findOneBy({ email });
 
     if (!candidate) {
@@ -77,7 +75,7 @@ export class AuthService {
       throw new HttpException("Wrong credentials", HttpStatus.BAD_REQUEST);
     }
 
-    const tokens = await this.sessionHandler.createSession(candidate, parsedUA);
+    const tokens = await this.sessionHandler.createSession(candidate, systemInfo);
 
     return { userId: candidate.id, ...tokens };
   }
@@ -86,13 +84,13 @@ export class AuthService {
    * Refresh token from cookies
    * @returns object with user id and accessToken
    */
-  async refreshSession(refreshToken: string, parsedUA){
+  async refreshSession(refreshToken: string, systemInfo){
     const user = await this.sessionHandler.validateToken(refreshToken);
     if (!user){
       throw new UnauthorizedException("Refresh token is not valid");
     }
 
-    const tokens = await this.sessionHandler.createSession(user, parsedUA);
+    const tokens = await this.sessionHandler.createSession(user, systemInfo);
 
     return { userId: user.id, ...tokens };
   }

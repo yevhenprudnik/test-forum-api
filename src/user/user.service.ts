@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entities/user.entity';
 import { Repository } from 'typeorm';
 
-const selectOptions = { //test comment 
+const selectOptions = {
   username: true,
   email: true,
   firstName: true,

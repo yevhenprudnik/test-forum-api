@@ -59,13 +59,13 @@ export class OauthService {
   }
   }
 
-  async generateSession(request, parsedUA){
+  async generateSession(request, systemInfo){
+
     if (!request.user) {
       throw new UnauthorizedException('Authorization failed')
     }
-    const tokens = await this.sessionHandler.createSession(request.user, parsedUA);
 
-    return tokens;
+    return this.sessionHandler.createSession(request.user, systemInfo);
   }
 
 }

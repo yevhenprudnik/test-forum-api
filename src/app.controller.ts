@@ -1,11 +1,9 @@
-import { Controller, Get, Headers } from '@nestjs/common';
-import * as parser  from 'ua-parser-js';
+import { Controller, Get } from '@nestjs/common';
+import { SystemInfo } from './decorators/user-agent.decorator';
 @Controller()
 export class AppController {
   @Get()
-  getHello(@Headers('User-Agent') headers) {
-    const parsed = parser(headers);
-    console.log(parsed);
-    return parsed;
+  getHello(@SystemInfo() systemInfo) {
+    return { a: 'Hell0, World!', systemInfo};
   }
 }
