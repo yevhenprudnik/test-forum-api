@@ -42,6 +42,6 @@ import { EmailHandler } from './handlers/mail.handler';
 ],
   providers: [ AuthService, SessionHandler, GoogleStrategy, FacebookStrategy, OauthService, EmailHandler ],
   controllers: [ AuthController ],
-  exports: [ SessionHandler, OauthService ]
+  exports: [ SessionHandler, OauthService, JwtModule ]
 })
 export class AuthModule {}

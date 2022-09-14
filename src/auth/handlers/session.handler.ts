@@ -19,12 +19,11 @@ export class SessionHandler {
     const hashed = hashFunction(systemInfo.ua);
     const userSession = await this.sessionRepository
       .createQueryBuilder("session")
-      .innerJoinAndSelect("session.user", "user")
-      .where("user.id = :id", { id: user.id })
+      .innerJoinAndSelect("session.user", "user", "user.id = :id", { id: user.id })
       .where(`session.device ::jsonb @> \'{"sessionId":${hashed}}\'`)
       .getOne();
 
-    const accessToken = this.jwt.sign({userId : user.id}, { expiresIn : '30m' });
+    const accessToken = this.jwt.sign({userId : user.id}, { expiresIn : '30d' });
     const refreshToken = this.jwt.sign({userId : user.id}, { expiresIn : '30d' });
     if (userSession) {
       userSession.accessToken = accessToken;
@@ -84,8 +83,7 @@ export class SessionHandler {
   async getAllSession(userId: number){
     const userSessions = await this.sessionRepository
         .createQueryBuilder("session")
-        .innerJoinAndSelect("session.user", "user")
-        .where("user.id = :id", { id: userId })
+        .innerJoinAndSelect("session.user", "user", "user.id = :id", { id: userId })
         .select("session.device")
         .getMany();
 
@@ -102,8 +100,7 @@ export class SessionHandler {
     }
     const userSession = await this.sessionRepository
       .createQueryBuilder("session")
-      .innerJoinAndSelect("session.user", "user")
-      .where("user.id = :id", { id: userId})
+      .innerJoinAndSelect("session.user", "user", "user.id = :id", { id: userId})
       .where(`session.device ::jsonb @> \'{"sessionId":${sessionId}}\'`)
       .getOne();
 
