@@ -1,5 +1,5 @@
 import { Tag } from './../../entities/tag.entity';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeepPartial, Repository } from 'typeorm';
 
@@ -10,7 +10,7 @@ export class TagHandler {
     private readonly tagRepository: Repository<Tag>
   ) {}
 
-  async manageTags(tags: string[]){
+  async onCreatePost(tags: string[]){
     for( const tag of tags ){
     const tagFromDb = await this.tagRepository.findOneBy({ name: tag});
 
@@ -24,6 +24,21 @@ export class TagHandler {
           postsCount: 1
         });
         await this.tagRepository.save(newTag);
+      }
+    }
+  }
+
+  async onDeletePost(tags: string[]){
+    for( const tag of tags ){
+      const tagFromDb = await this.tagRepository.findOneBy({ name: tag});
+      if (!tagFromDb) {
+        throw new BadRequestException('Failed to delete tag')
+      }
+      tagFromDb.postsCount--;
+      if (tagFromDb.postsCount <= 0) {
+        await this.tagRepository.remove(tagFromDb);
+      } else {
+        await this.tagRepository.save(tagFromDb);
       }
     }
   }

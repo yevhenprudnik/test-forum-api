@@ -1,3 +1,4 @@
+import { postCache } from 'src/interfaces/post.cacheData';
 import { 
   Entity, 
   Column, 
@@ -44,7 +45,7 @@ export class Post {
   @Column({
     type: "jsonb",
   })
-  cacheData: {};
+  cacheData: postCache;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -17,10 +17,11 @@ export class SessionHandler {
   async createSession(user: User, systemInfo){
   
     const hashed = hashFunction(systemInfo.ua);
+
     const userSession = await this.sessionRepository
       .createQueryBuilder("session")
+      .where({ id : hashed })
       .innerJoinAndSelect("session.user", "user", "user.id = :id", { id: user.id })
-      .where(`session.device ::jsonb @> \'{"sessionId":${hashed}}\'`)
       .getOne();
 
     const accessToken = this.jwt.sign({userId : user.id}, { expiresIn : '30d' });
@@ -35,11 +36,11 @@ export class SessionHandler {
       };
     }
     const newSession = this.sessionRepository.create({
+      id: hashed,
       accessToken, 
       refreshToken,
       user,
       device: {
-        sessionId: hashed,
         os: systemInfo.os.name,
         type: systemInfo.device.type || 'Browser',
         model: systemInfo.device.model
