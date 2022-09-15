@@ -5,8 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { SessionHandler } from 'src/auth/handlers/session.handler';
 import { JwtModule } from '@nestjs/jwt';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   imports: [
@@ -14,9 +14,10 @@ import { JwtModule } from '@nestjs/jwt';
     TypeOrmModule.forFeature([ User, Session ]),
     JwtModule.register({
       secret: process.env.JWT_SECRET
-    })
+    }),
+    AuthModule
   ],
   controllers: [ UserController ],
-  providers: [ UserService, SessionHandler ]
+  providers: [ UserService ]
 })
 export class UserModule {}

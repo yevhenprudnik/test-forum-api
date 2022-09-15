@@ -13,6 +13,7 @@ import { FacebookStrategy } from './oauth/facebook.strategy';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
 import { EmailHandler } from './handlers/mail.handler';
+import { TokenAuthGuard } from './guards/token.auth.guard';
 
 @Module({
   imports: [
@@ -42,6 +43,6 @@ import { EmailHandler } from './handlers/mail.handler';
 ],
   providers: [ AuthService, SessionHandler, GoogleStrategy, FacebookStrategy, OauthService, EmailHandler ],
   controllers: [ AuthController ],
-  exports: [ SessionHandler, OauthService ]
+  exports: [ SessionHandler ]
 })
 export class AuthModule {}
