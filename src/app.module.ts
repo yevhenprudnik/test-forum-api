@@ -6,13 +6,13 @@ import { AuthModule } from './auth/auth.module';
 import { Session } from './entities/session.entity';
 import { User } from './entities/user.entity';
 import { UserModule } from './user/user.module';
-import { PostModule } from './post/post.module';
 import { Post } from './entities/post.entity';
 import { Tag } from './entities/tag.entity';
 import { LikeModule } from './like/like.module';
 import { Comment } from './entities/comment.entity';
 import { Like } from './entities/like.entity';
 import { CommentModule } from './comment/comment.module';
+import { PostModule } from './post/post.module';
 
 @Module({
   imports: [ 

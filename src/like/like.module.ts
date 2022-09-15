@@ -17,8 +17,8 @@ import { LikeService } from './like.service';
     TypeOrmModule.forFeature([ User, Session, Post, Like, Comment ]),
     AuthModule, 
     UserModule,
-    forwardRef(() => PostModule),
-    CommentModule
+    forwardRef(() => CommentModule),
+    forwardRef(() => PostModule)
   ],
   providers: [ LikeService ],
   controllers: [ LikeController ],

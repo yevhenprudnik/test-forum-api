@@ -76,6 +76,8 @@ export class LikeService {
         author: user
       });
 
+      await this.postService.handlePostLike(post, 'addLike')
+
       await this.likeRepository.save(newLikePost);
 
       return { message: 'Like added successfully', post: newLikePost };

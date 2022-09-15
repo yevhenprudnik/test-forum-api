@@ -1,9 +1,9 @@
-import { Tag } from './../../entities/tag.entity';
+import { Tag } from '../../entities/tag.entity';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeepPartial, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
-@Injectable()
+
 export class TagHandler {
   constructor(
     @InjectRepository(Tag) 

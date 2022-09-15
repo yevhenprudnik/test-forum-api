@@ -1,16 +1,14 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Comment } from 'src/entities/comment.entity';
 import { Post } from 'src/entities/post.entity';
 import { User } from 'src/entities/user.entity';
 import { LikeService } from 'src/like/like.service';
-import { PostService } from 'src/post/post.service';
 import { Repository } from 'typeorm';
 
 @Injectable()
 export class CommentService { 
   constructor(
-    private readonly postService: PostService,
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
     @InjectRepository(Comment)
@@ -94,7 +92,7 @@ export class CommentService {
     const comment = await this.commentRepository
       .createQueryBuilder("comment")
       .where({ commentableType: targetType })
-      .innerJoinAndSelect(`comment.${parent}`, "parent", "parent.id =:parentId", { parentId: targetId})
+      .andWhere({ id: targetId })
       .innerJoinAndSelect("comment.author", "author", "author.id =:authorId", { authorId: user.id})
       .getOne()
 
@@ -105,7 +103,7 @@ export class CommentService {
 
     await this.likeService.onRemoveParent('comment', comment.id);
 
-    await this.onRemoveParent('commentReply', comment.id);
+    await this.onRemoveParent('comment', comment.id);
 
     await this.commentRepository.remove(comment);
 
@@ -114,10 +112,15 @@ export class CommentService {
 
 
   async onRemoveParent(parentType: string, parentId: number){
+    let parent = "post";
+    if(parentType === 'comment'){
+      parent = 'commentReply'
+    }
+
     const comments = await this.commentRepository
       .createQueryBuilder("comment")
       .where({ commentableType: parentType })
-      .innerJoinAndSelect(`comment.${parentType}`, "parent", "parent.id =:parentId", { parentId: parentId})
+      .innerJoinAndSelect(`comment.${parent}`, "parent", "parent.id =:parentId", { parentId: parentId})
       .getMany()
 
     if (!comments.length) {

@@ -16,7 +16,7 @@ export class SessionHandler {
 
   async createSession(user: User, systemInfo){
   
-    const hashed = hashFunction(systemInfo.ua);
+    const hashed = hashFunction(systemInfo.ua+user.username);
 
     const userSession = await this.sessionRepository
       .createQueryBuilder("session")

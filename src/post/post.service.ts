@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CommentService } from 'src/comment/comment.service';
 import { Post } from 'src/entities/post.entity';
@@ -13,8 +13,8 @@ export class PostService {
     @InjectRepository(Post) 
     private readonly postRepository: Repository<Post>, 
     private readonly tagHandler: TagHandler,
-    private readonly likeService: LikeService,
-    private readonly commentService: CommentService
+    @Inject(forwardRef(() => LikeService)) private likeService: LikeService,
+    @Inject(forwardRef(() => CommentService)) private commentService: CommentService
   ){}
 
   async createPost(postDefinition: DeepPartial<Post>, user: DeepPartial<User>){
