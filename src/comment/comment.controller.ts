@@ -13,9 +13,9 @@ export class CommentController {
   }
 
   @UseGuards(TokenAuthGuard)
-  @Delete(":targetType/:targetId")
-  deleteComment(@Param('targetType') targetType, @Param('targetId') targetId, @Req() request){
-    return this.commentService.removeComment(targetType, targetId, request.user);
+  @Delete("delete/:commentId")
+  deleteComment( @Param('commentId') commentId, @Req() request){
+    return this.commentService.removeComment(commentId, request.user);
   }
 
   @Get(":targetType/:targetId")

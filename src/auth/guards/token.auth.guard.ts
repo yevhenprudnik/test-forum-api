@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { SessionHandler } from '../handlers/session.handler';
 
 @Injectable()
-export class TokenAuthGuard implements CanActivate{
+export class TokenAuthGuard implements CanActivate {
 
   constructor( private readonly sessionHandler : SessionHandler ){}
 

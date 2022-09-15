@@ -6,8 +6,7 @@ import {
   CreateDateColumn, 
   UpdateDateColumn,
   ManyToOne, 
-  JoinColumn, 
-  OneToOne} from 'typeorm';
+  JoinColumn } from 'typeorm';
 import { User } from './user.entity';
 
 @Entity()

@@ -29,7 +29,7 @@ export class PostService {
       title, description, picture, coverPicture, tags,
       author: user,
       cacheData:  {
-        viewsCount : 0,
+        viewsCount: 0,
         likesCount: 0,
         savesCount: 0
       }
