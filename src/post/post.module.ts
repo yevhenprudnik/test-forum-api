@@ -22,8 +22,8 @@ import { CommentModule } from 'src/comment/comment.module';
     CommentModule,
     forwardRef(() => LikeModule)
   ],
-  providers: [ PostService ],
+  providers: [ PostService, TagHandler ],
   controllers: [ PostController ],
-  exports: [ PostService ]
+  exports: [ PostService, TagHandler ]
 })
 export class PostModule {}
