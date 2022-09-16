@@ -11,7 +11,7 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
         super({
             clientID: process.env.FACEBOOK_CLIENT_ID,
             clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
-            callbackURL: `${process.env.API_URL}/auth/oauth/callback/facebook`,
+            callbackURL: `${process.env.API_URL}/auth/callback/facebook`,
             scope: "email",
             profileFields: ['id', 'displayName', 'photos', 'emails']
         });
@@ -21,7 +21,7 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
       profile: Profile, 
       done: (err: any, user: any, info?: any) => void): Promise<any> {
         try {
-          const user = await this.oauthService.oauthHandler(profile);
+          const user = await this.oauthService.oauthHandler(profile, accessToken);
           done(null, user);
         } catch (error) {
           done(error, null);

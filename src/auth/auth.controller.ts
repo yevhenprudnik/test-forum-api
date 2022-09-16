@@ -71,11 +71,11 @@ export class AuthController {
     return this.sessionHandler.getAllSession(request.user.id);
   }
 
-  @Get('oauth/google')
+  @Get('google')
   @UseGuards(AuthGuard('google'))
   googleAuth(){}
 
-  @Get('oauth/callback/google')
+  @Get('callback/google')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() request, @Res({ passthrough: true }) response, @SystemInfo() systemInfo){
 
@@ -85,11 +85,11 @@ export class AuthController {
     return {accessToken: tokens.accessToken, userId: request.user.id };
   }
 
-  @Get('oauth/facebook')
+  @Get('facebook')
   @UseGuards(AuthGuard('facebook'))
   facebookAuth(){}
 
-  @Get('oauth/callback/facebook')
+  @Get('callback/facebook')
   @UseGuards(AuthGuard('facebook'))
   async facebookAuthRedirect(@Req() request, @Res({ passthrough: true }) response, @SystemInfo() systemInfo){
 

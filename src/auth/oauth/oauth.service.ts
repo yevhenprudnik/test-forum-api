@@ -18,7 +18,7 @@ export class OauthService {
    * @param  {any} profile
    * user profile from the provider
    */
-  async oauthHandler(profile: any){
+  async oauthHandler(profile: any, accessToken: string){
     const user = await this.usersRepository
     .createQueryBuilder('user')
     .where(`user.oauth ::jsonb @> \'{"id":"${profile.id}"}\'`)
@@ -46,6 +46,7 @@ export class OauthService {
         firstName: profile.displayName.split(' ')[0],
         lastName: profile.displayName.split(' ')[1],
         oauth: {
+          token: accessToken,
           provider : profile.provider,
           id : profile.id,
         }
@@ -60,11 +61,18 @@ export class OauthService {
   }
 
   async generateSession(request, systemInfo){
-
     if (!request.user) {
       throw new UnauthorizedException('Authorization failed')
     }
+    const oauthToken = request.user.oauth.token;
+    const userByToken =  await this.usersRepository
+      .createQueryBuilder('user')
+      .where(`user.oauth ::jsonb @> \'{"token":"${oauthToken}"}\'`)
+      .getOne()
 
+    if (!userByToken) {
+      throw new UnauthorizedException('Authorization failed')
+    }
     return this.sessionHandler.createSession(request.user, systemInfo);
   }
 
