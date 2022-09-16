@@ -24,6 +24,9 @@ export class OauthService {
     .where(`user.oauth ::jsonb @> \'{"id":"${profile.id}"}\'`)
     .getOne();
   if(user){
+    user.oauth.token = accessToken;
+    await this.usersRepository.save(user);
+    
     return user;
   } else {
       const username = profile.displayName.toLocaleLowerCase().replace(/\s/g, '');
