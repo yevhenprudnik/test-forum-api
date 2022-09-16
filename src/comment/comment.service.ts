@@ -4,7 +4,7 @@ import { Comment } from 'src/entities/comment.entity';
 import { Post } from 'src/entities/post.entity';
 import { User } from 'src/entities/user.entity';
 import { LikeService } from 'src/like/like.service';
-import { Repository } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 
 @Injectable()
 export class CommentService { 
@@ -16,20 +16,20 @@ export class CommentService {
     private readonly likeService: LikeService
   ){}
 
-  async addComment(targetType: string, targetId: number, user: User, text: string){
+  async addComment(targetType: string, targetId: number, user: User, comment: DeepPartial<Comment>){
     if(targetType !== 'comment' && targetType !== 'post'){
       throw new BadRequestException('Only post and comments can be commented');
     }
     if (targetType === 'comment') {
-      const comment = await this.commentRepository.findOneBy({ id: targetId});
+      const commentFromDb = await this.commentRepository.findOneBy({ id: targetId});
       if(!comment) {
         throw new NotFoundException("Comment not found");
       }
 
       const newComment = this.commentRepository.create({
         commentableType: 'comment',
-        text: text,
-        commentReply: comment,
+        text: comment.text,
+        commentReply: commentFromDb,
         author: user
       });
 
@@ -45,7 +45,7 @@ export class CommentService {
 
       const newComment = this.commentRepository.create({
         commentableType: 'post',
-        text: text,
+        text: comment.text,
         post: post,
         author: user
       });

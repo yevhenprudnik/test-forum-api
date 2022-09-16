@@ -40,7 +40,6 @@ export class AuthController {
   @Get('logOut')
   @UseGuards(TokenAuthGuard)
   logOut(@Req() request, @SystemInfo() systemInfo, @Query('id') id){
-
     return this.sessionHandler.removeSession(request.user.id, systemInfo, id);
   }
 
@@ -52,7 +51,14 @@ export class AuthController {
   @Get('auth')
   @UseGuards(TokenAuthGuard)
   auth(@Req() request): object{
-    const { password, emailConfirmationLink, confirmedEmail, oauth, ...dataForClient } = request.user;
+    const { 
+      password,
+      emailConfirmationLink,
+      confirmedEmail,
+      oauth,
+      ...dataForClient 
+    } = request.user;
+    
     return dataForClient;
   }
 
