@@ -11,6 +11,8 @@ export class SessionHandler {
   constructor(
     @InjectRepository(Session) 
     private readonly sessionRepository: Repository<Session>,
+    @InjectRepository(User) 
+    private readonly userRepository: Repository<User>,
     private jwt: JwtService
   ) {}
 
@@ -20,8 +22,7 @@ export class SessionHandler {
     const userSession = await this.sessionRepository
       .createQueryBuilder("session")
       .where({ id: hashed })
-      .innerJoinAndSelect("session.user", "user")
-      .where("user.id = :id", { id: user.id })
+      .innerJoinAndSelect("session.user", "user", "user.id = :id", { id: user.id })
       .getOne();
 
     const accessToken = this.jwt.sign({userId : user.id}, { expiresIn : '30m' });
@@ -81,30 +82,30 @@ export class SessionHandler {
     }
   }
 
-  async getAllSession(userId: number){
-    const userSessions = await this.sessionRepository
-        .createQueryBuilder("session")
-        .innerJoinAndSelect("session.user", "user")
-        .where("user.id = :id", { id: userId })
-        .select("session.device")
-        .getMany();
+  async getAllSession(user: User){
+    const userSessions = await this.userRepository
+      .createQueryBuilder("user")
+      .where({ id: user.id })
+      .innerJoinAndSelect("user.sessions", "sessions")
+      .select(["user.username","sessions.device"])
+      .getMany()
 
-      if (!userSessions.length) {
+    if (!userSessions.length) {
         throw new UnauthorizedException('Authorization failed');
       }
       return userSessions;
   }
 
-  async removeSession(userId: number, systemInfo, sessionId?){
+  async removeSession(user: User, systemInfo, sessionId?){
 
     if (!sessionId){
-      sessionId = hashFunction(systemInfo.ua);
+      sessionId = hashFunction(systemInfo.ua+user.username);
     }
     const userSession = await this.sessionRepository
       .createQueryBuilder("session")
       .innerJoinAndSelect("session.user", "user")
-      .where("user.id = :id", { id: userId})
-      .where(`session.device ::jsonb @> \'{"sessionId":${sessionId}}\'`)
+      .where("user.id = :id", { id: user.id})
+      .where({ id: sessionId })
       .getOne();
 
     if (!userSession) {

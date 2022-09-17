@@ -8,7 +8,6 @@ import { SessionHandler } from './handlers/session.handler';
 import { OauthService } from './oauth/oauth.service';
 import { SystemInfo } from 'src/decorators/user-agent.decorator';
 
-
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -41,7 +40,7 @@ export class AuthController {
   @UseGuards(TokenAuthGuard)
   logOut(@Req() request, @SystemInfo() systemInfo, @Query('id') id){
 
-    return this.sessionHandler.removeSession(request.user.id, systemInfo, id);
+    return this.sessionHandler.removeSession(request.user, systemInfo, id);
   }
 
   @Get('activateEmail/:link')
@@ -68,7 +67,7 @@ export class AuthController {
   @Get('sessions')
   @UseGuards(TokenAuthGuard)
   getSessions(@Req() request){
-    return this.sessionHandler.getAllSession(request.user.id);
+    return this.sessionHandler.getAllSession(request.user);
   }
 
   @Get('google')

@@ -1,6 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToMany } from 'typeorm';
 import { userAdditionalInfo } from 'src/interfaces/user.additionalInfo.interface';
 import { userOauth } from 'src/interfaces/user.oauth.interface';
+import { Session } from './session.entity';
 
 @Entity()
 export class User {
@@ -60,4 +61,7 @@ export class User {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @OneToMany(type => Session, (session) => session.user)
+  sessions: Session[]
 }

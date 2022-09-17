@@ -7,7 +7,11 @@ export class Session {
   @PrimaryColumn()
   id: number;
 
-  @ManyToOne(type => User) @JoinColumn()
+  @ManyToOne(
+    type => User, 
+    (user) => user.sessions, 
+    { onDelete: "CASCADE" }
+  ) @JoinColumn()
   user: User;
 
   @Column("text")

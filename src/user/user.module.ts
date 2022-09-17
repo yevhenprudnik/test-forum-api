@@ -1,20 +1,15 @@
 import { User } from '../entities/user.entity';
-import { Session } from '../entities/session.entity';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ envFilePath : '.env' }),
-    TypeOrmModule.forFeature([ User, Session ]),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET
-    }),
+    TypeOrmModule.forFeature([ User ]),
     AuthModule
   ],
   controllers: [ UserController ],
