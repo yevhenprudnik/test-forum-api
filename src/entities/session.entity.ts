@@ -1,3 +1,4 @@
+import { DeviceSchema } from 'src/schemas/device.schema';
 import { Entity, Column, CreateDateColumn, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
 import { User } from './user.entity';
 
@@ -22,7 +23,7 @@ export class Session {
   @Column({
     type: "jsonb",
   })
-  device: object;
+  device: DeviceSchema;
 
   @CreateDateColumn()
   createdAt: Date;

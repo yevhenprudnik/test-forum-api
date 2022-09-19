@@ -5,7 +5,8 @@ import { AuthService } from './auth.service';
 import { TokenAuthGuard } from './guards/token.auth.guard';
 import { SessionHandler } from './handlers/session.handler';
 import { OauthHandler } from './handlers/oauth.handelr';
-import { SystemInfo } from 'src/decorators/user-agent.decorator';
+import { SystemInfo } from 'src/decorators/system-info';
+import { Session } from 'src/entities/session.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -18,21 +19,21 @@ export class AuthController {
   @Post('register')
   async register( @Body() userDto: RegisterDto, @SystemInfo() systemInfo, @Res({ passthrough: true }) response){
 
-    const { refreshToken, ...rest } = await this.authService.register(userDto, systemInfo);
+    const { refreshToken, accessToken } = await this.authService.register(userDto, systemInfo);
 
     response.cookie('refreshToken', refreshToken);
     
-    return rest;
+    return accessToken;
   }
 
   @Post('logIn')
   async logIn(@Body() userDto: LoginDto, @Res({ passthrough: true }) response, @SystemInfo() systemInfo){
 
-    const { refreshToken, ...rest } = await this.authService.logIn(userDto, systemInfo);
+    const { refreshToken, accessToken } = await this.authService.logIn(userDto, systemInfo);
 
     response.cookie('refreshToken', refreshToken);
 
-    return rest;
+    return accessToken;
   }
 
   @Get('logOut')
@@ -57,10 +58,10 @@ export class AuthController {
   @Get('refresh')
   async refresh(@Req() request, @Res({ passthrough: true }) response, @SystemInfo() systemInfo){
 
-    const { refreshToken, ...rest } = await this.authService.refreshSession(request.cookies.refreshToken, systemInfo);
+    const { refreshToken, accessToken } = await this.authService.refreshSession(request.cookies.refreshToken, systemInfo);
 
     response.cookie('refreshToken', refreshToken);
-    return rest;
+    return accessToken;
   }
 
   @Get('sessions')

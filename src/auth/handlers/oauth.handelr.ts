@@ -1,7 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { randomUUID } from 'crypto';
+import { Session } from 'src/entities/session.entity';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { EmailHandler } from './mail.handler';
@@ -12,7 +12,6 @@ export class OauthHandler {
     @InjectRepository(User) 
     private readonly usersRepository: Repository<User>,
     private readonly sessionHandler: SessionHandler,
-    private readonly mailerService: EmailHandler,
     private readonly httpService: HttpService
   ) {}
     /**
@@ -23,7 +22,7 @@ export class OauthHandler {
      * @param  {} systemInfo
      * 
      */
-    async oauthHandler(provider: string, token: string, systemInfo){
+    async oauthHandler(provider: string, token: string, systemInfo): Promise<Session>{
       try {
         let dataFromProviderURL = '';
         if (provider === 'facebook'){
@@ -48,7 +47,7 @@ export class OauthHandler {
    * @param  {any} profile
    * user profile from the provider
    */
-  async authUser(profile: any, provider: string, systemInfo){
+  async authUser(profile: any, provider: string, systemInfo): Promise<Session>{
     const user = await this.usersRepository
     .createQueryBuilder('user')
     .where(`user.oauth ::jsonb @> \'{"id":"${profile.id}"}\'`)
@@ -71,13 +70,11 @@ export class OauthHandler {
         profile.family_name = profile.last_name;
         profile.picture = profile.picture.data.url;
       }
-
-      const emailConfirmationLink = randomUUID();
   
       const newUser = this.usersRepository.create({ 
         username, 
         email : profile.email,
-        emailConfirmationLink, 
+        confirmedEmail: true,
         firstName: profile.given_name,
         lastName: profile.family_name,
         profilePicture: profile.picture,
@@ -88,9 +85,7 @@ export class OauthHandler {
       });
       
       const user = await this.usersRepository.save(newUser);
-      
-      await this.mailerService.sendActivationEmail(profile.email, emailConfirmationLink);
-      
+            
       return this.sessionHandler.createSession(user, systemInfo)
     }
   }

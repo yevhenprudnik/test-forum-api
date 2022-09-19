@@ -1,5 +1,5 @@
 import { Controller, Get, Headers } from '@nestjs/common';
-import { SystemInfo } from './decorators/user-agent.decorator';
+import { SystemInfo } from './decorators/system-info';
 @Controller()
 export class AppController {
   @Get()

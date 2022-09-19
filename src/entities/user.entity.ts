@@ -20,7 +20,9 @@ export class User {
   })
   email: string;
 
-  @Column("text")
+  @Column("text", {
+    nullable: true
+  })
   emailConfirmationLink: string;
 
   @Column("text")

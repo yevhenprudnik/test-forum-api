@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { SessionHandler } from './handlers/session.handler';
 import { EmailHandler } from './handlers/mail.handler';
+import { Session } from 'src/entities/session.entity';
 
 @Injectable()
 export class AuthService {
@@ -16,12 +17,12 @@ export class AuthService {
     private mailerService: EmailHandler
   ) {}
   /**
-   * @param  userDefinition
+   * @param  definition
    * email, username, password, firstName, lastName
    * @returns object with user id and accessToken
    */
-  async register(userDefinition: DeepPartial<User>, systemInfo){
-    const { username, email, password, firstName, lastName } = userDefinition;
+  async register(definition: DeepPartial<User>, systemInfo): Promise<Session> {
+    const { username, email, password, firstName, lastName } = definition;
     const candidate = await this.usersRepository.findOne({ where: [
       { email: email },
       { username: username }
@@ -50,18 +51,16 @@ export class AuthService {
     
     await this.mailerService.sendActivationEmail(email, emailConfirmationLink);
 
-    const tokens = await this.sessionHandler.createSession(newUser, systemInfo);
-
-    return { userId: newUser.id, ...tokens };
+    return this.sessionHandler.createSession(newUser, systemInfo);
   }
   
   /**
-   * @param  userDefinition
+   * @param  definition
    * email, password
    * @returns object with user id and accessToken
    */
-  async logIn(userDefinition: DeepPartial<User>, systemInfo){
-    const { email, password } = userDefinition;
+  async logIn(definition: DeepPartial<User>, systemInfo): Promise<Session>{
+    const { email, password } = definition;
     const candidate = await this.usersRepository.findOneBy({ email });
 
     if (!candidate) {
@@ -75,24 +74,20 @@ export class AuthService {
       throw new HttpException("Wrong credentials", HttpStatus.BAD_REQUEST);
     }
 
-    const tokens = await this.sessionHandler.createSession(candidate, systemInfo);
-
-    return { userId: candidate.id, ...tokens };
+    return this.sessionHandler.createSession(candidate, systemInfo);
   }
   /**
    * @param  {string} refreshToken
    * Refresh token from cookies
    * @returns object with user id and accessToken
    */
-  async refreshSession(refreshToken: string, systemInfo){
+  async refreshSession(refreshToken: string, systemInfo): Promise<Session>{
     const user = await this.sessionHandler.validateToken(refreshToken);
     if (!user){
       throw new UnauthorizedException("Refresh token is not valid");
     }
 
-    const tokens = await this.sessionHandler.createSession(user, systemInfo);
-
-    return { userId: user.id, ...tokens };
+    return this.sessionHandler.createSession(user, systemInfo);;
   }
   /**
    * @param  {string} accessToken

@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Session } from 'src/entities/session.entity';
 import { JwtService } from '@nestjs/jwt'; 
-import { Repository } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 import { User } from 'src/entities/user.entity';
 import hashFunction from '../../helpers/string.hash.generator'
 
@@ -16,7 +16,7 @@ export class SessionHandler {
     private jwt: JwtService
   ) {}
 
-  async createSession(user: User, systemInfo){
+  async createSession(user: User, systemInfo): Promise<Session>{
   
     const hashed = hashFunction(systemInfo.ua+user.username);
     const userSession = await this.sessionRepository
@@ -30,11 +30,7 @@ export class SessionHandler {
     if (userSession) {
       userSession.accessToken = accessToken;
       userSession.refreshToken = refreshToken;
-      await this.sessionRepository.save(userSession);
-      return { 
-        accessToken : userSession.accessToken,
-        refreshToken : userSession.refreshToken 
-      };
+      return this.sessionRepository.save(userSession);
     }
     const newSession = this.sessionRepository.create({
       id: hashed,
@@ -47,15 +43,11 @@ export class SessionHandler {
         model: systemInfo.device.model
       }
     })
-    await this.sessionRepository.save(newSession);
 
-    return { 
-      accessToken : newSession.accessToken,
-      refreshToken : newSession.refreshToken 
-    };
+    return this.sessionRepository.save(newSession);
   }
 
-  async validateToken(token: string) {
+  async validateToken(token: string): Promise<User> {
     try {
       const session = await this.sessionRepository
       .createQueryBuilder("session")
