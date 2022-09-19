@@ -7,15 +7,17 @@ import { User } from '../entities/user.entity';
 import { SessionHandler } from './handlers/session.handler';
 import { Session } from 'src/entities/session.entity';
 import { ConfigModule } from '@nestjs/config';
-import { OauthService } from './oauth/oauth.service';
+import { OauthHandler } from './handlers/oauth.handelr';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
 import { EmailHandler } from './handlers/mail.handler';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ envFilePath : '.env' }),
     TypeOrmModule.forFeature([ User, Session ]),
+    HttpModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET
     }),
@@ -41,8 +43,8 @@ import { EmailHandler } from './handlers/mail.handler';
   providers: [ 
     AuthService,
     SessionHandler, 
-    OauthService, 
-    EmailHandler, 
+    OauthHandler, 
+    EmailHandler,
   ],
   controllers: [ AuthController ],
   exports: [ SessionHandler ]

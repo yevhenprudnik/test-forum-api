@@ -1,11 +1,10 @@
-import { Body, Controller, Get, Param, Post, Req, Res, UseGuards, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Res, UseGuards, Query, Headers } from '@nestjs/common';
 import { RegisterDto } from '../dtos/register.dto';
 import { LoginDto } from '../dtos/login.dto';
 import { AuthService } from './auth.service';
 import { TokenAuthGuard } from './guards/token.auth.guard';
-import { AuthGuard } from '@nestjs/passport';
 import { SessionHandler } from './handlers/session.handler';
-import { OauthService } from './oauth/oauth.service';
+import { OauthHandler } from './handlers/oauth.handelr';
 import { SystemInfo } from 'src/decorators/user-agent.decorator';
 
 @Controller('auth')
@@ -13,7 +12,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly sessionHandler: SessionHandler,
-    private readonly oauthService: OauthService
+    private readonly oauthHandler: OauthHandler
 ) {}
 
   @Post('register')
@@ -71,30 +70,26 @@ export class AuthController {
   }
 
   @Get('google')
-  @UseGuards(AuthGuard('google'))
-  googleAuth(){}
+  async googleAuth(
+    @Res({ passthrough: true }) response, 
+    @SystemInfo() systemInfo, 
+    @Headers('Authorization') AuthHeaders){
 
-  @Get('callback/google')
-  @UseGuards(AuthGuard('google'))
-  async googleAuthRedirect(@Req() request, @Res({ passthrough: true }) response, @SystemInfo() systemInfo){
-
-    const tokens = await this.oauthService.generateSession(request, systemInfo);
+    const tokens = await this.oauthHandler.oauthHandler('google', AuthHeaders, systemInfo);
     response.cookie( 'refreshToken', tokens.refreshToken );
     
-    return {accessToken: tokens.accessToken, userId: request.user.id };
+    return { accessToken: tokens.accessToken };
   }
 
   @Get('facebook')
-  @UseGuards(AuthGuard('facebook'))
-  facebookAuth(){}
+  async facebookAuth(
+    @Res({ passthrough: true }) response, 
+    @SystemInfo() systemInfo, 
+    @Headers('Authorization') AuthHeaders){
 
-  @Get('callback/facebook')
-  @UseGuards(AuthGuard('facebook'))
-  async facebookAuthRedirect(@Req() request, @Res({ passthrough: true }) response, @SystemInfo() systemInfo){
-
-    const tokens = await this.oauthService.generateSession(request, systemInfo);
+    const tokens = await this.oauthHandler.oauthHandler('facebook', AuthHeaders, systemInfo);
     response.cookie( 'refreshToken', tokens.refreshToken );
     
-    return {accessToken: tokens.accessToken, userId: request.user.id };
+    return { accessToken: tokens.accessToken };
   }
 }
