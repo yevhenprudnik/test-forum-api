@@ -24,7 +24,7 @@ export class AuthController {
     response.cookie('refreshToken', refreshToken);
     response.cookie( 'accessToken', accessToken );
     
-    return accessToken;
+    return { refreshToken, accessToken };
   }
 
   @Post('logIn')
