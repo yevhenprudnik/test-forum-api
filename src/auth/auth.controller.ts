@@ -4,9 +4,9 @@ import { LoginDto } from '../dtos/login.dto';
 import { AuthService } from './auth.service';
 import { TokenAuthGuard } from './guards/token.auth.guard';
 import { SessionHandler } from './handlers/session.handler';
-import { OauthHandler } from './handlers/oauth.handelr';
+import { OauthHandler } from './handlers/oauth.handler';
 import { SystemInfo } from 'src/decorators/system-info';
-import { Session } from 'src/entities/session.entity';
+import { RefreshToken } from 'src/decorators/refresh-token';
 
 @Controller('auth')
 export class AuthController {
@@ -17,23 +17,25 @@ export class AuthController {
 ) {}
 
   @Post('register')
-  async register( @Body() userDto: RegisterDto, @SystemInfo() systemInfo, @Res({ passthrough: true }) response){
+  async register( @Body() registerDto: RegisterDto, @SystemInfo() systemInfo, @Res({ passthrough: true }) response){
 
-    const { refreshToken, accessToken } = await this.authService.register(userDto, systemInfo);
+    const { refreshToken, accessToken } = await this.authService.register(registerDto, systemInfo);
 
     response.cookie('refreshToken', refreshToken);
+    response.cookie( 'accessToken', accessToken );
     
     return accessToken;
   }
 
   @Post('logIn')
-  async logIn(@Body() userDto: LoginDto, @Res({ passthrough: true }) response, @SystemInfo() systemInfo){
+  async logIn(@Body() logInDto: LoginDto, @Res({ passthrough: true }) response, @SystemInfo() systemInfo){
 
-    const { refreshToken, accessToken } = await this.authService.logIn(userDto, systemInfo);
+    const { refreshToken, accessToken } = await this.authService.logIn(logInDto, systemInfo);
 
     response.cookie('refreshToken', refreshToken);
+    response.cookie( 'accessToken', accessToken );
 
-    return accessToken;
+    return { refreshToken, accessToken };
   }
 
   @Get('logOut')
@@ -56,12 +58,13 @@ export class AuthController {
   }
 
   @Get('refresh')
-  async refresh(@Req() request, @Res({ passthrough: true }) response, @SystemInfo() systemInfo){
+  async refresh(@RefreshToken() refreshTokenFromClient, @Res({ passthrough: true }) response, @SystemInfo() systemInfo){
 
-    const { refreshToken, accessToken } = await this.authService.refreshSession(request.cookies.refreshToken, systemInfo);
+    const { refreshToken, accessToken } = await this.authService.refreshSession(refreshTokenFromClient, systemInfo);
 
     response.cookie('refreshToken', refreshToken);
-    return accessToken;
+    response.cookie( 'accessToken', accessToken );
+    return { refreshToken, accessToken };
   }
 
   @Get('sessions')
@@ -78,8 +81,9 @@ export class AuthController {
 
     const tokens = await this.oauthHandler.oauthHandler('google', AuthHeaders, systemInfo);
     response.cookie( 'refreshToken', tokens.refreshToken );
+    response.cookie( 'accessToken', tokens.accessToken );
     
-    return { accessToken: tokens.accessToken };
+    return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken };
   }
 
   @Get('facebook')
@@ -90,7 +94,8 @@ export class AuthController {
 
     const tokens = await this.oauthHandler.oauthHandler('facebook', AuthHeaders, systemInfo);
     response.cookie( 'refreshToken', tokens.refreshToken );
+    response.cookie( 'accessToken', tokens.accessToken );
     
-    return { accessToken: tokens.accessToken };
+    return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken };
   }
 }

@@ -9,13 +9,15 @@ export class TokenAuthGuard implements CanActivate{
   async canActivate( context: ExecutionContext){
     const request = context.switchToHttp().getRequest();
     try {
+      let accessToken = request.cookies.accessToken;
       const authHeader = request.headers.authorization;
-
-      const bearer = authHeader.split(" ")[0];
-      const accessToken = authHeader.split(" ")[1]; 
-
-      if (bearer !== 'Bearer' || !accessToken) {
-        throw new UnauthorizedException('Token is not valid');
+      
+      if(!accessToken){
+        const authHeaders = authHeader.split(" "); 
+        if (authHeaders[0] !== "Bearer" || !authHeaders[1]) {
+          throw new UnauthorizedException('Token is not valid');
+        }
+        accessToken = authHeaders[1];
       }
 
       const user = await this.sessionHandler.validateToken(accessToken);

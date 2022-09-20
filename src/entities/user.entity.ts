@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToMany } from 'typeorm';
-import { userAdditionalInfo } from 'src/interfaces/user.additionalInfo.interface';
-import { userOauth } from 'src/interfaces/user.oauth.interface';
+import { UserAdditionalInfo } from 'src/interfaces/user.additionalInfo.interface';
+import { UserOauth } from 'src/interfaces/user.oauth.interface';
 import { Session } from './session.entity';
 
 @Entity()
@@ -53,13 +53,13 @@ export class User {
     type: "jsonb",
     default: {}
   })
-  additionalInfo: userAdditionalInfo;
+  additionalInfo: UserAdditionalInfo;
 
   @Column({
     type: "jsonb",
     default: {}
   })
-  oauth: userOauth;
+  oauth: UserOauth;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -1,4 +1,4 @@
-export interface userAdditionalInfo {
+export interface UserAdditionalInfo {
   birthday?: Date;
   locate?: string;
   website?: string;

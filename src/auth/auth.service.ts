@@ -12,9 +12,9 @@ import { Session } from 'src/entities/session.entity';
 export class AuthService {
   constructor(
     @InjectRepository(User) 
-    private readonly usersRepository: Repository<User>,
-    private sessionHandler: SessionHandler,
-    private mailerService: EmailHandler
+    public usersRepository: Repository<User>,
+    public sessionHandler: SessionHandler,
+    public mailerService: EmailHandler
   ) {}
   /**
    * @param  definition
