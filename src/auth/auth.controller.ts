@@ -4,7 +4,6 @@ import { LoginDto } from '../dtos/login.dto';
 import { AuthService } from './auth.service';
 import { TokenAuthGuard } from './guards/token.auth.guard';
 import { SessionHandler } from './handlers/session.handler';
-import { OauthHandler } from './handlers/oauth.handler';
 import { SystemInfo } from 'src/decorators/system-info';
 import { RefreshToken } from 'src/decorators/refresh-token';
 
@@ -13,7 +12,6 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly sessionHandler: SessionHandler,
-    private readonly oauthHandler: OauthHandler
 ) {}
 
   @Post('register')
@@ -40,7 +38,9 @@ export class AuthController {
 
   @Get('logOut')
   @UseGuards(TokenAuthGuard)
-  logOut(@Req() request, @SystemInfo() systemInfo, @Query('id') id){
+  logOut(@Req() request, @SystemInfo() systemInfo, @Query('id') id, @Res({ passthrough: true }) response){
+    response.clearCookie('refreshToken');
+    response.clearCookie('accessToken');
 
     return this.sessionHandler.removeSession(request.user, systemInfo, id);
   }
@@ -79,7 +79,7 @@ export class AuthController {
     @SystemInfo() systemInfo, 
     @Headers('Authorization') AuthHeaders){
 
-    const tokens = await this.oauthHandler.oauthHandler('google', AuthHeaders, systemInfo);
+    const tokens = await this.authService.oauthHandler('google', AuthHeaders, systemInfo);
     response.cookie( 'refreshToken', tokens.refreshToken );
     response.cookie( 'accessToken', tokens.accessToken );
     
@@ -92,7 +92,7 @@ export class AuthController {
     @SystemInfo() systemInfo, 
     @Headers('Authorization') AuthHeaders){
 
-    const tokens = await this.oauthHandler.oauthHandler('facebook', AuthHeaders, systemInfo);
+    const tokens = await this.authService.oauthHandler('facebook', AuthHeaders, systemInfo);
     response.cookie( 'refreshToken', tokens.refreshToken );
     response.cookie( 'accessToken', tokens.accessToken );
     

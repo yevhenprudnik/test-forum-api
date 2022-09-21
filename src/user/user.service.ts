@@ -29,7 +29,8 @@ export class UserService {
    */
   getUser(username: string): Promise<User>{
     return this.usersRepository.findOne({ 
-      where: { username: username }
+      where: { username: username },
+      select : selectOptions
     });
   }
 }

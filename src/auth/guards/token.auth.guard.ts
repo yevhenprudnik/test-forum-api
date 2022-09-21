@@ -14,7 +14,7 @@ export class TokenAuthGuard implements CanActivate{
       
       if(!accessToken){
         const authHeaders = authHeader.split(" "); 
-        if (authHeaders[0] !== "Bearer" || !authHeaders[1]) {
+        if (!authHeader.startsWith('Bearer') || !authHeaders[1]) {
           throw new UnauthorizedException('Token is not valid');
         }
         accessToken = authHeaders[1];

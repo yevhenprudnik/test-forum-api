@@ -14,7 +14,7 @@ export class UserController {
   }
 
   @UseGuards(TokenAuthGuard)
-  @Get('user/:username')
+  @Get('/:username')
   getUser(@Param('username') username: string): Promise<User>{
     return this.userService.getUser(username);
   }

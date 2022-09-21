@@ -7,14 +7,17 @@ import { randomUUID } from 'crypto';
 import { SessionHandler } from './handlers/session.handler';
 import { EmailHandler } from './handlers/mail.handler';
 import { Session } from 'src/entities/session.entity';
+import { usernameFunctions } from 'src/helpers/username.functions';
+import { HttpService } from '@nestjs/axios';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User) 
-    public usersRepository: Repository<User>,
-    public sessionHandler: SessionHandler,
-    public mailerService: EmailHandler
+    private readonly usersRepository: Repository<User>,
+    private readonly sessionHandler: SessionHandler,
+    private readonly mailerService: EmailHandler,
+    private readonly httpService: HttpService,
   ) {}
   /**
    * @param  definition
@@ -62,7 +65,6 @@ export class AuthService {
   async logIn(definition: DeepPartial<User>, systemInfo): Promise<Session>{
     const { email, password } = definition;
     const candidate = await this.usersRepository.findOneBy({ email });
-
     if (!candidate) {
       throw new HttpException("User not found", HttpStatus.NOT_FOUND);
     }
@@ -117,6 +119,91 @@ export class AuthService {
     await this.usersRepository.save(user);
 
     return { confirmed: true }
+  }
+
+  /**
+   * @param  {string} provider
+   * google/facebook
+   * @param  {string} token
+   * access oauth token from the client
+   * @param  {} systemInfo
+   * 
+   */
+  async oauthHandler(provider: string, token: string, systemInfo): Promise<Session>{
+    try {
+      let dataFromProviderURL = '';
+      if (provider === 'facebook'){
+        dataFromProviderURL = process.env.OAUTH_URL_FACEBOOK
+      } else if (provider === 'google') {
+        dataFromProviderURL = process.env.OAUTH_URL_GOOGLE
+      } else {
+        throw new BadRequestException('Provider unavailable')
+      }
+      const userinfo = await this.httpService.axiosRef.get(dataFromProviderURL, {
+        headers : {
+          authorization: 'Bearer ' + token.split(" ")[1]
+      }})
+      return this.oauthUserHandler(userinfo.data, provider, systemInfo);
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('Invalid access token');
+    }
+  }
+  
+  /**
+   * @param  {any} profile
+   * user profile from the provider
+   */
+  async oauthUserHandler(profile: any, provider: string, systemInfo): Promise<Session>{
+    const userFromDb = await this.usersRepository
+    .createQueryBuilder('user')
+    .where(`user.oauth ::jsonb @> \'{"id":"${profile.id}"}\'`)
+    .getOne();
+    if(userFromDb){
+      return this.sessionHandler.createSession(userFromDb, systemInfo)
+    } 
+    const candidateByEmail = await this.usersRepository.findOneBy({ email : profile.email });
+    if (candidateByEmail){
+      throw new BadRequestException(`Looks like username with email ${profile.email} have already been registered via another authentication method. Please use your initial type of authentication`);
+    }
+    const username = await this.generateUsername(profile.name);
+    if (!username){
+      throw new BadRequestException(`Please try common method of registration and come up with unique username`);
+    }
+    
+    if (provider === 'facebook') {
+      profile.given_name = profile.first_name;
+      profile.family_name = profile.last_name;
+      profile.picture = profile.picture.data.url;
+    }
+
+    const newUser = this.usersRepository.create({ 
+      username, 
+      email : profile.email,
+      confirmedEmail: true,
+      firstName: profile.given_name,
+      lastName: profile.family_name,
+      profilePicture: profile.picture,
+      oauth: {
+        provider,
+        id : profile.id,
+      }
+    });
+    
+  const user = await this.usersRepository.save(newUser);
+        
+  return this.sessionHandler.createSession(user, systemInfo)
+  }
+
+  async generateUsername(profileName: string){
+    for(const fn of usernameFunctions){
+      const username = fn(profileName);
+      const candidateByUsername = await this.usersRepository.findOneBy({ username });
+      if (!candidateByUsername){
+        return username;
+      }
+    }
+    return null;
   }
 
 }

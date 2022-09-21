@@ -7,7 +7,6 @@ import { User } from '../entities/user.entity';
 import { SessionHandler } from './handlers/session.handler';
 import { Session } from 'src/entities/session.entity';
 import { ConfigModule } from '@nestjs/config';
-import { OauthHandler } from './handlers/oauth.handler';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
 import { EmailHandler } from './handlers/mail.handler';
@@ -43,7 +42,6 @@ import { HttpModule } from '@nestjs/axios';
   providers: [ 
     AuthService,
     SessionHandler, 
-    OauthHandler, 
     EmailHandler
   ],
   controllers: [ AuthController ],
