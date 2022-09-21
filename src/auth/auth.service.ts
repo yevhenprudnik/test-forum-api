@@ -172,7 +172,7 @@ export class AuthService {
       return this.sessionHandler.createSession(userFromDb, systemInfo)
     } 
     const candidateByEmail = await this.usersRepository.findOneBy({ email : profile.email });
-    if (candidateByEmail){
+    if (candidateByEmail) {
       throw new BadRequestException(`Looks like user with email ${profile.email} have already been registered via another authentication method. Please use your initial type of authentication`);
     }
     
