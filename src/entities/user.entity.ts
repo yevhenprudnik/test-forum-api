@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToMany } from 'typeorm';
-import { UserAdditionalInfo } from 'src/interfaces/user.additionalInfo.interface';
-import { UserOauth } from 'src/interfaces/user.oauth.interface';
+import { UserAdditionalInfo } from 'src/schemas/additionalInfo.schema';
+import { UserOauth } from 'src/schemas/oauthInfo.schema';
 import { Session } from './session.entity';
 
 @Entity()
@@ -10,6 +10,7 @@ export class User {
 
   @Column({
     type: "text",
+    nullable: true,
     unique: true
   })
   username: string;

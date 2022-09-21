@@ -7,8 +7,8 @@ import { randomUUID } from 'crypto';
 import { SessionHandler } from './handlers/session.handler';
 import { EmailHandler } from './handlers/mail.handler';
 import { Session } from 'src/entities/session.entity';
-import { usernameFunctions } from 'src/helpers/username.functions';
 import { HttpService } from '@nestjs/axios';
+import { OauthProfileInterface } from 'src/interfaces/oauth.profile.interface';
 
 @Injectable()
 export class AuthService {
@@ -121,6 +121,15 @@ export class AuthService {
     return { confirmed: true }
   }
 
+  async editUsername(username: string, user: DeepPartial<User>): Promise<User> {
+    const candidate = await this.usersRepository.countBy({ username });
+    if(candidate){
+      throw new BadRequestException(`Username ${username} is already taken`);
+    }
+    user.username = username;
+    return this.usersRepository.save(user);
+  }
+
   /**
    * @param  {string} provider
    * google/facebook
@@ -154,7 +163,7 @@ export class AuthService {
    * @param  {any} profile
    * user profile from the provider
    */
-  async oauthUserHandler(profile: any, provider: string, systemInfo): Promise<Session>{
+  async oauthUserHandler(profile: OauthProfileInterface, provider: string, systemInfo): Promise<Session>{
     const userFromDb = await this.usersRepository
     .createQueryBuilder('user')
     .where(`user.oauth ::jsonb @> \'{"id":"${profile.id}"}\'`)
@@ -164,11 +173,7 @@ export class AuthService {
     } 
     const candidateByEmail = await this.usersRepository.findOneBy({ email : profile.email });
     if (candidateByEmail){
-      throw new BadRequestException(`Looks like username with email ${profile.email} have already been registered via another authentication method. Please use your initial type of authentication`);
-    }
-    const username = await this.generateUsername(profile.name);
-    if (!username){
-      throw new BadRequestException(`Please try common method of registration and come up with unique username`);
+      throw new BadRequestException(`Looks like user with email ${profile.email} have already been registered via another authentication method. Please use your initial type of authentication`);
     }
     
     if (provider === 'facebook') {
@@ -177,8 +182,7 @@ export class AuthService {
       profile.picture = profile.picture.data.url;
     }
 
-    const newUser = this.usersRepository.create({ 
-      username, 
+    const newUser = this.usersRepository.create({
       email : profile.email,
       confirmedEmail: true,
       firstName: profile.given_name,
@@ -193,17 +197,6 @@ export class AuthService {
   const user = await this.usersRepository.save(newUser);
         
   return this.sessionHandler.createSession(user, systemInfo)
-  }
-
-  async generateUsername(profileName: string){
-    for(const fn of usernameFunctions){
-      const username = fn(profileName);
-      const candidateByUsername = await this.usersRepository.findOneBy({ username });
-      if (!candidateByUsername){
-        return username;
-      }
-    }
-    return null;
   }
 
 }

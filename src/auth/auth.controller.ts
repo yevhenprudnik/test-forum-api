@@ -6,6 +6,7 @@ import { TokenAuthGuard } from './guards/token.auth.guard';
 import { SessionHandler } from './handlers/session.handler';
 import { SystemInfo } from 'src/decorators/system-info';
 import { RefreshToken } from 'src/decorators/refresh-token';
+import { UsernameDto } from 'src/dtos/username.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -71,6 +72,12 @@ export class AuthController {
   @UseGuards(TokenAuthGuard)
   getSessions(@Req() request){
     return this.sessionHandler.getAllSession(request.user);
+  }
+
+  @Post('edit-username')
+  @UseGuards(TokenAuthGuard)
+  editUsername(@Req() request, @Body() usernameDto: UsernameDto){
+    return this.authService.editUsername(usernameDto.username, request.user)
   }
 
   @Get('google')
