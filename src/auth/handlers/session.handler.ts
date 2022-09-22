@@ -19,6 +19,7 @@ export class SessionHandler {
   async createSession(user: User, systemInfo): Promise<Session>{
   
     const hashed = hashFunction(systemInfo.ua+user.username);
+
     const userSession = await this.sessionRepository
       .createQueryBuilder("session")
       .where({ id: hashed })
@@ -27,11 +28,13 @@ export class SessionHandler {
 
     const accessToken = this.jwt.sign({userId : user.id}, { expiresIn : '30m' });
     const refreshToken = this.jwt.sign({userId : user.id}, { expiresIn : '30d' });
+
     if (userSession) {
       userSession.accessToken = accessToken;
       userSession.refreshToken = refreshToken;
       return this.sessionRepository.save(userSession);
     }
+
     const newSession = this.sessionRepository.create({
       id: hashed,
       accessToken, 
@@ -55,18 +58,21 @@ export class SessionHandler {
       .where([
         { accessToken : token},
         { refreshToken : token}
-      ]).getOne();
+      ])
+      .getOne();
 
       if(!session){
         throw new UnauthorizedException('Token is not valid');
       }
       
       let dataFromToken : object = {};
+
       if (session.refreshToken === token) {
         dataFromToken = await this.jwt.verify(session.refreshToken);
       } else {
         dataFromToken = await this.jwt.verify(session.accessToken)
       }
+      
       return session.user;
 
     } catch (error) {
@@ -84,8 +90,8 @@ export class SessionHandler {
 
     if (!userSessions.length) {
         throw new UnauthorizedException('Authorization failed');
-      }
-      return userSessions;
+    }
+    return userSessions;
   }
 
   async removeSession(user: User, systemInfo, sessionId?){
@@ -93,6 +99,7 @@ export class SessionHandler {
     if (!sessionId){
       sessionId = hashFunction(systemInfo.ua+user.username);
     }
+    
     const userSession = await this.sessionRepository
       .createQueryBuilder("session")
       .innerJoinAndSelect("session.user", "user")

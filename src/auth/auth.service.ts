@@ -26,10 +26,12 @@ export class AuthService {
    */
   async register(definition: DeepPartial<User>, systemInfo): Promise<Session> {
     const { username, email, password, firstName, lastName } = definition;
+
     const candidate = await this.usersRepository.findOne({ where: [
       { email: email },
       { username: username }
     ]});
+
     if (candidate) {
       if (candidate.username === username && candidate.email !== email) {
         throw new HttpException(`Username ${username} is already taken, please try to come up with a different username`, HttpStatus.CONFLICT);
@@ -64,14 +66,18 @@ export class AuthService {
    */
   async logIn(definition: DeepPartial<User>, systemInfo): Promise<Session>{
     const { email, password } = definition;
+
     const candidate = await this.usersRepository.findOneBy({ email });
+    
     if (!candidate) {
       throw new HttpException("User not found", HttpStatus.NOT_FOUND);
     }
     if (candidate.oauth.provider) {
       throw new HttpException(`You have been authorized via ${candidate.oauth.provider}`, HttpStatus.BAD_REQUEST);
     }
+    
     const isPasswordEqual = await bcrypt.compare(password, candidate.password);
+    
     if (!isPasswordEqual) {
       throw new HttpException("Wrong credentials", HttpStatus.BAD_REQUEST);
     }
@@ -85,6 +91,7 @@ export class AuthService {
    */
   async refreshSession(refreshToken: string, systemInfo): Promise<Session>{
     const user = await this.sessionHandler.validateToken(refreshToken);
+    
     if (!user){
       throw new UnauthorizedException("Refresh token is not valid");
     }
@@ -98,6 +105,7 @@ export class AuthService {
    */
   async authorize(accessToken: string): Promise<User> {
     const user = await this.sessionHandler.validateToken(accessToken);
+    
     if (!user){
       throw new UnauthorizedException("Access token is not valid");
     }
@@ -115,6 +123,7 @@ export class AuthService {
     if (!user) {
       throw new BadRequestException('Activation link is not valid');
     }
+    
     user.confirmedEmail = true;
     await this.usersRepository.save(user);
 
@@ -127,10 +136,13 @@ export class AuthService {
     }
 
     const candidate = await this.usersRepository.countBy({ username });
+    
     if(candidate){
       throw new BadRequestException(`Username ${username} is already taken`);
     }
+    
     user.username = username;
+    
     return this.usersRepository.save(user);
   }
 
@@ -145,6 +157,7 @@ export class AuthService {
   async oauthHandler(provider: string, token: string, systemInfo): Promise<Session>{
     try {
       let dataFromProviderURL = '';
+      
       if (provider === 'facebook'){
         dataFromProviderURL = process.env.OAUTH_URL_FACEBOOK
       } else if (provider === 'google') {
@@ -152,11 +165,11 @@ export class AuthService {
       } else {
         throw new BadRequestException('Provider unavailable')
       }
+      
       const userinfo = await this.httpService.axiosRef.get(dataFromProviderURL, {
         headers : {
           authorization: 'Bearer ' + token.split(" ")[1]
       }})
-
 
       return this.oauthUserHandler(userinfo.data, provider, systemInfo);
     } catch (error) {
@@ -174,10 +187,13 @@ export class AuthService {
     .createQueryBuilder('user')
     .where(`user.oauth ::jsonb @> \'{"id":"${profile.id}"}\'`)
     .getOne();
+    
     if(user){
       return this.sessionHandler.createSession(user, systemInfo)
     } 
+    
     const candidateByEmail = await this.usersRepository.countBy({ email : profile.email });
+    
     if (candidateByEmail) {
       throw new BadRequestException(`Looks like user with email ${profile.email} have already been registered via another authentication method. Please use your initial type of authentication`);
     }

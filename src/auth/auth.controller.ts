@@ -39,6 +39,7 @@ export class AuthController {
   @Get('logOut')
   @UseGuards(TokenAuthGuard)
   logOut(@Req() request, @SystemInfo() systemInfo, @Query('id') id, @Res({ passthrough: true }) response){
+    
     response.clearCookie('refreshToken');
     response.clearCookie('accessToken');
 
@@ -53,6 +54,7 @@ export class AuthController {
   @Get('auth')
   @UseGuards(TokenAuthGuard)
   auth(@Req() request): object{
+    
     const { password, emailConfirmationLink, confirmedEmail, oauth, ...dataForClient } = request.user;
 
     return dataForClient;
@@ -78,6 +80,7 @@ export class AuthController {
   @Post('edit-username')
   @UseGuards(TokenAuthGuard)
   editUsername(@Req() request, @Body() body){
+    
     const { username } = body;
 
     return this.authService.editUsername(username, request.user)
@@ -90,6 +93,7 @@ export class AuthController {
     @Headers('Authorization') AuthHeaders){
 
     const tokens = await this.authService.oauthHandler('google', AuthHeaders, systemInfo);
+    
     response.cookie( 'refreshToken', tokens.refreshToken );
     response.cookie( 'accessToken', tokens.accessToken );
     
@@ -103,6 +107,7 @@ export class AuthController {
     @Headers('Authorization') AuthHeaders){
 
     const tokens = await this.authService.oauthHandler('facebook', AuthHeaders, systemInfo);
+    
     response.cookie( 'refreshToken', tokens.refreshToken );
     response.cookie( 'accessToken', tokens.accessToken );
     
