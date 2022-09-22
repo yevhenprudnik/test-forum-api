@@ -210,21 +210,10 @@ export class UserService {
           
     return this.sessionService.createSession(savedUser, systemInfo)
   }
-
-  async createUserViaGoogle(profile: GoogleUser) : Promise<User>{
-    return this.usersRepository.create({
-      email : profile.email,
-      confirmedEmail: true,
-      firstName: profile.given_name,
-      lastName: profile.family_name,
-      profilePicture: profile.picture,
-      oauth: {
-        provider: "google",
-        id : profile.id,
-      }
-    });
-  }
-
+  /**
+   * @param  {User} user
+   * user object
+   */
   async getAllSession(user: User){
     const userSessions = await this.usersRepository
       .createQueryBuilder("user")
@@ -238,7 +227,27 @@ export class UserService {
     }
     return userSessions;
   }
-
+    /**
+   * @param  {GoogleUser} profile
+   * google profile info
+   */
+  async createUserViaGoogle(profile: GoogleUser) : Promise<User>{
+    return this.usersRepository.create({
+      email : profile.email,
+      confirmedEmail: true,
+      firstName: profile.given_name,
+      lastName: profile.family_name,
+      profilePicture: profile.picture,
+      oauth: {
+        provider: "google",
+        id : profile.id,
+      }
+    });
+  }
+    /**
+   * @param  {FacebookUser} profile
+   * facebook profile info
+   */
   async createUserViaFacebook(profile: FacebookUser) : Promise<User>{
     return this.usersRepository.create({
       email : profile.email,

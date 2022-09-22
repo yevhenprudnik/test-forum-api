@@ -13,7 +13,12 @@ export class SessionService {
     private readonly sessionRepository: Repository<Session>,
     private jwt: JwtService
   ) {}
-
+  /**
+   * @param  {User} user
+   * user object
+   * @param  {} systemInfo
+   * information from user-agent header
+   */
   async createSession(user: User, systemInfo): Promise<Session>{
   
     const hashed = hashFunction(systemInfo.ua+user.username);
@@ -47,7 +52,10 @@ export class SessionService {
 
     return this.sessionRepository.save(newSession);
   }
-
+  /**
+   * @param  {string} token
+   * access/refresh token
+   */
   async validateToken(token: string): Promise<User> {
     try {
       const session = await this.sessionRepository
@@ -77,7 +85,14 @@ export class SessionService {
       return null;
     }
   }
-
+  /**
+   * @param  {User} user
+   * user object
+   * @param  {} systemInfo
+   * information from user-agent header
+   * @param  {} sessionId
+   * (optional) id of a session to remove
+   */
   async removeSession(user: User, systemInfo, sessionId?){
 
     if (!sessionId){
