@@ -74,7 +74,7 @@ export class UserController {
   @Get('sessions')
   @UseGuards(TokenAuthGuard)
   getSessions(@Req() request){
-    return this.userService.getAllSession(request.user);
+    return this.userService.getAllSessions(request.user);
   }
 
   @Post('edit-username')

@@ -9,6 +9,7 @@ import { EmailHandler } from './handlers/mail.handler';
 import { Session } from 'src/entities/session.entity';
 import { HttpService } from '@nestjs/axios';
 import { GoogleUser, FacebookUser } from 'src/interfaces/oauth.profile.interfaces';
+import { SystemInfo } from 'src/interfaces/systemInfo.interface';
 
 @Injectable()
 export class UserService {
@@ -24,7 +25,7 @@ export class UserService {
    * email, username, password, firstName, lastName
    * @returns object with user id and accessToken
    */
-  async register(definition: DeepPartial<User>, systemInfo): Promise<Session> {
+  async register(definition: DeepPartial<User>, systemInfo: SystemInfo): Promise<Session> {
     const { username, email, password, firstName, lastName } = definition;
 
     const candidate = await this.usersRepository.findOne({ where: [
@@ -64,7 +65,7 @@ export class UserService {
    * email, password
    * @returns object with user id and accessToken
    */
-  async logIn(definition: DeepPartial<User>, systemInfo): Promise<Session>{
+  async logIn(definition: DeepPartial<User>, systemInfo: SystemInfo): Promise<Session>{
     const { email, password } = definition;
 
     const candidate = await this.usersRepository.findOneBy({ email });
@@ -89,7 +90,7 @@ export class UserService {
    * Refresh token from cookies
    * @returns object with user id and accessToken
    */
-  async refreshSession(refreshToken: string, systemInfo): Promise<Session>{
+  async refreshSession(refreshToken: string, systemInfo: SystemInfo): Promise<Session>{
     const user = await this.sessionService.validateToken(refreshToken);
     
     if (!user){
@@ -154,7 +155,7 @@ export class UserService {
    * @param  {} systemInfo
    * 
    */
-  async oauthHandler(provider: string, token: string, systemInfo): Promise<Session>{
+  async oauthHandler(provider: string, token: string, systemInfo: SystemInfo): Promise<Session>{
     try {
       let dataFromProviderURL = '';
       
@@ -182,7 +183,7 @@ export class UserService {
    * @param  {any} profile
    * user profile from the provider
    */
-  async oauthUserHandler(profile: FacebookUser & GoogleUser, provider: string, systemInfo): Promise<Session>{
+  async oauthUserHandler(profile: FacebookUser & GoogleUser, provider: string, systemInfo: SystemInfo): Promise<Session>{
     const user = await this.usersRepository
     .createQueryBuilder('user')
     .where(`user.oauth ::jsonb @> \'{"id":"${profile.id}"}\'`)
@@ -214,7 +215,7 @@ export class UserService {
    * @param  {User} user
    * user object
    */
-  async getAllSession(user: User){
+  async getAllSessions(user: User){
     const userSessions = await this.usersRepository
       .createQueryBuilder("user")
       .where({ id: user.id })

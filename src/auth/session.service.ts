@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import { User } from 'src/entities/user.entity';
 import hashFunction from '../helpers/string.hash.generator'
+import { SystemInfo } from 'src/interfaces/systemInfo.interface';
 
 @Injectable()
 export class SessionService {
@@ -19,7 +20,7 @@ export class SessionService {
    * @param  {} systemInfo
    * information from user-agent header
    */
-  async createSession(user: User, systemInfo): Promise<Session>{
+  async createSession(user: User, systemInfo: SystemInfo): Promise<Session>{
   
     const hashed = hashFunction(systemInfo.ua+user.username);
 
@@ -93,7 +94,7 @@ export class SessionService {
    * @param  {} sessionId
    * (optional) id of a session to remove
    */
-  async removeSession(user: User, systemInfo, sessionId?){
+  async removeSession(user: User, systemInfo: SystemInfo, sessionId?: number){
 
     if (!sessionId){
       sessionId = hashFunction(systemInfo.ua+user.username);
