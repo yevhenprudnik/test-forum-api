@@ -1,23 +1,22 @@
 import { JwtModule } from '@nestjs/jwt';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
+import { UserService } from './user.service';
+import { UserController } from './user.controller';
 import { User } from '../entities/user.entity';
-import { SessionHandler } from './handlers/session.handler';
+import { SessionService } from './session.service';
 import { Session } from 'src/entities/session.entity';
 import { ConfigModule } from '@nestjs/config';
-import { GoogleStrategy } from './oauth/google.strategy';
-import { OauthService } from './oauth/oauth.service';
-import { FacebookStrategy } from './oauth/facebook.strategy';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
 import { EmailHandler } from './handlers/mail.handler';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ envFilePath : '.env' }),
     TypeOrmModule.forFeature([ User, Session ]),
+    HttpModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET
     }),
@@ -40,8 +39,12 @@ import { EmailHandler } from './handlers/mail.handler';
       },
     })
 ],
-  providers: [ AuthService, SessionHandler, GoogleStrategy, FacebookStrategy, OauthService, EmailHandler ],
-  controllers: [ AuthController ],
-  exports: [ SessionHandler, OauthService ]
+  providers: [ 
+    UserService,
+    SessionService, 
+    EmailHandler
+  ],
+  controllers: [ UserController ],
+  exports: [ SessionService ]
 })
-export class AuthModule {}
+export class UserModule {}

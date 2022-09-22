@@ -1,12 +1,16 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, CreateDateColumn, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
 import { User } from './user.entity';
 
 @Entity()
 export class Session {
-  @PrimaryGeneratedColumn()
+  @PrimaryColumn()
   id: number;
 
-  @OneToOne(type => User) @JoinColumn()
+  @ManyToOne(
+    type => User, 
+    (user) => user.sessions, 
+    { onDelete: "CASCADE" }
+  ) @JoinColumn()
   user: User;
 
   @Column("text")
@@ -16,10 +20,13 @@ export class Session {
   refreshToken: string;
 
   @Column({
-    type: "text",
-    nullable: true
+    type: "jsonb",
   })
-  device: string;
+  device: {
+    os?: string;
+    type?: string;
+    model?: string;
+  };
 
   @CreateDateColumn()
   createdAt: Date;

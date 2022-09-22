@@ -1,6 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
-import { userAdditionalInfo } from 'src/interfaces/user.additionalInfo.interface';
-import { userOauth } from 'src/interfaces/user.oauth.interface';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToMany } from 'typeorm';
+import { Session } from './session.entity';
 
 @Entity()
 export class User {
@@ -9,6 +8,7 @@ export class User {
 
   @Column({
     type: "text",
+    nullable: true,
     unique: true
   })
   username: string;
@@ -19,7 +19,9 @@ export class User {
   })
   email: string;
 
-  @Column("text")
+  @Column("text", {
+    nullable: true
+  })
   emailConfirmationLink: string;
 
   @Column("text")
@@ -50,14 +52,26 @@ export class User {
     type: "jsonb",
     default: {}
   })
-  additionalInfo: userAdditionalInfo;
+  additionalInfo: {
+    birthday?: Date;
+    locate?: string;
+    website?: string;
+    bio?: string;
+  };
 
   @Column({
     type: "jsonb",
     default: {}
   })
-  oauth: userOauth;
+  oauth: {
+    token: string;
+    id: number;
+    provider: string;
+  };
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @OneToMany(type => Session, (session) => session.user)
+  sessions: Session[]
 }

@@ -2,10 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
-import { AuthModule } from './auth/auth.module';
+import { UserModule } from './auth/user.module';
 import { Session } from './entities/session.entity';
 import { User } from './entities/user.entity';
-import { UserModule } from './user/user.module';
 
 @Module({
   imports: [ 
@@ -22,9 +21,7 @@ import { UserModule } from './user/user.module';
       logging: false,
     }),
     UserModule,
-    AuthModule,
   ],
   controllers: [ AppController ],
-  providers: [],
 })
 export class AppModule {}
