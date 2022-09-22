@@ -2,17 +2,15 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Session } from 'src/entities/session.entity';
 import { JwtService } from '@nestjs/jwt'; 
-import { DeepPartial, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { User } from 'src/entities/user.entity';
-import hashFunction from '../../helpers/string.hash.generator'
+import hashFunction from '../helpers/string.hash.generator'
 
 @Injectable()
-export class SessionHandler {
+export class SessionService {
   constructor(
     @InjectRepository(Session) 
     private readonly sessionRepository: Repository<Session>,
-    @InjectRepository(User) 
-    private readonly userRepository: Repository<User>,
     private jwt: JwtService
   ) {}
 
@@ -80,26 +78,12 @@ export class SessionHandler {
     }
   }
 
-  async getAllSession(user: User){
-    const userSessions = await this.userRepository
-      .createQueryBuilder("user")
-      .where({ id: user.id })
-      .innerJoinAndSelect("user.sessions", "sessions")
-      .select(["user.username","sessions.device"])
-      .getMany()
-
-    if (!userSessions.length) {
-        throw new UnauthorizedException('Authorization failed');
-    }
-    return userSessions;
-  }
-
   async removeSession(user: User, systemInfo, sessionId?){
 
     if (!sessionId){
       sessionId = hashFunction(systemInfo.ua+user.username);
     }
-    
+
     const userSession = await this.sessionRepository
       .createQueryBuilder("session")
       .innerJoinAndSelect("session.user", "user")

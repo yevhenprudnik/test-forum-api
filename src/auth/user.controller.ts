@@ -1,23 +1,23 @@
 import { Body, Controller, Get, Param, Post, Req, Res, UseGuards, Query, Headers } from '@nestjs/common';
 import { RegisterDto } from '../dtos/register.dto';
 import { LoginDto } from '../dtos/login.dto';
-import { AuthService } from './auth.service';
+import { UserService } from './user.service';
 import { TokenAuthGuard } from './guards/token.auth.guard';
-import { SessionHandler } from './handlers/session.handler';
+import { SessionService } from './session.service';
 import { SystemInfo } from 'src/decorators/system-info';
 import { RefreshToken } from 'src/decorators/refresh-token';
 
 @Controller('auth')
-export class AuthController {
+export class UserController {
   constructor(
-    private readonly authService: AuthService,
-    private readonly sessionHandler: SessionHandler,
+    private readonly userService: UserService,
+    private readonly sessionService: SessionService,
 ) {}
 
   @Post('register')
   async register( @Body() registerDto: RegisterDto, @SystemInfo() systemInfo, @Res({ passthrough: true }) response){
 
-    const { refreshToken, accessToken } = await this.authService.register(registerDto, systemInfo);
+    const { refreshToken, accessToken } = await this.userService.register(registerDto, systemInfo);
 
     response.cookie('refreshToken', refreshToken);
     response.cookie( 'accessToken', accessToken );
@@ -28,7 +28,7 @@ export class AuthController {
   @Post('logIn')
   async logIn(@Body() logInDto: LoginDto, @Res({ passthrough: true }) response, @SystemInfo() systemInfo){
 
-    const { refreshToken, accessToken } = await this.authService.logIn(logInDto, systemInfo);
+    const { refreshToken, accessToken } = await this.userService.logIn(logInDto, systemInfo);
 
     response.cookie('refreshToken', refreshToken);
     response.cookie( 'accessToken', accessToken );
@@ -43,12 +43,12 @@ export class AuthController {
     response.clearCookie('refreshToken');
     response.clearCookie('accessToken');
 
-    return this.sessionHandler.removeSession(request.user, systemInfo, id);
+    return this.sessionService.removeSession(request.user, systemInfo, id);
   }
 
   @Get('activateEmail/:link')
   activateEmail(@Param('link') link: string){
-    return this.authService.activateEmail(link);
+    return this.userService.activateEmail(link);
   }
 
   @Get('auth')
@@ -63,7 +63,7 @@ export class AuthController {
   @Get('refresh')
   async refresh(@RefreshToken() refreshTokenFromClient, @Res({ passthrough: true }) response, @SystemInfo() systemInfo){
 
-    const { refreshToken, accessToken } = await this.authService.refreshSession(refreshTokenFromClient, systemInfo);
+    const { refreshToken, accessToken } = await this.userService.refreshSession(refreshTokenFromClient, systemInfo);
 
     response.cookie('refreshToken', refreshToken);
     response.cookie( 'accessToken', accessToken );
@@ -74,7 +74,7 @@ export class AuthController {
   @Get('sessions')
   @UseGuards(TokenAuthGuard)
   getSessions(@Req() request){
-    return this.sessionHandler.getAllSession(request.user);
+    return this.userService.getAllSession(request.user);
   }
 
   @Post('edit-username')
@@ -83,7 +83,7 @@ export class AuthController {
     
     const { username } = body;
 
-    return this.authService.editUsername(username, request.user)
+    return this.userService.editUsername(username, request.user)
   }
 
   @Get('google')
@@ -92,7 +92,7 @@ export class AuthController {
     @SystemInfo() systemInfo, 
     @Headers('Authorization') AuthHeaders){
 
-    const tokens = await this.authService.oauthHandler('google', AuthHeaders, systemInfo);
+    const tokens = await this.userService.oauthHandler('google', AuthHeaders, systemInfo);
     
     response.cookie( 'refreshToken', tokens.refreshToken );
     response.cookie( 'accessToken', tokens.accessToken );
@@ -106,11 +106,24 @@ export class AuthController {
     @SystemInfo() systemInfo, 
     @Headers('Authorization') AuthHeaders){
 
-    const tokens = await this.authService.oauthHandler('facebook', AuthHeaders, systemInfo);
+    const tokens = await this.userService.oauthHandler('facebook', AuthHeaders, systemInfo);
     
     response.cookie( 'refreshToken', tokens.refreshToken );
     response.cookie( 'accessToken', tokens.accessToken );
     
     return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken };
   }
+
+  @UseGuards(TokenAuthGuard)
+  @Get('users')
+  getUsers(){
+    return this.userService.findAll()
+  }
+
+  @UseGuards(TokenAuthGuard)
+  @Get('/:username')
+  getUser(@Param('username') username: string){
+    return this.userService.getUser(username);
+  }
+
 }

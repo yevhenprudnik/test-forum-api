@@ -4,18 +4,18 @@ import { DeepPartial, Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
-import { SessionHandler } from './handlers/session.handler';
+import { SessionService } from './session.service';
 import { EmailHandler } from './handlers/mail.handler';
 import { Session } from 'src/entities/session.entity';
 import { HttpService } from '@nestjs/axios';
 import { GoogleUser, FacebookUser } from 'src/interfaces/oauth.profile.interfaces';
 
 @Injectable()
-export class AuthService {
+export class UserService {
   constructor(
     @InjectRepository(User) 
     private readonly usersRepository: Repository<User>,
-    private readonly sessionHandler: SessionHandler,
+    private readonly sessionService: SessionService,
     private readonly mailerService: EmailHandler,
     private readonly httpService: HttpService,
   ) {}
@@ -56,7 +56,7 @@ export class AuthService {
     
     await this.mailerService.sendActivationEmail(email, emailConfirmationLink);
 
-    return this.sessionHandler.createSession(newUser, systemInfo);
+    return this.sessionService.createSession(newUser, systemInfo);
   }
   
   /**
@@ -82,7 +82,7 @@ export class AuthService {
       throw new HttpException("Wrong credentials", HttpStatus.BAD_REQUEST);
     }
 
-    return this.sessionHandler.createSession(candidate, systemInfo);
+    return this.sessionService.createSession(candidate, systemInfo);
   }
   /**
    * @param  {string} refreshToken
@@ -90,13 +90,13 @@ export class AuthService {
    * @returns object with user id and accessToken
    */
   async refreshSession(refreshToken: string, systemInfo): Promise<Session>{
-    const user = await this.sessionHandler.validateToken(refreshToken);
+    const user = await this.sessionService.validateToken(refreshToken);
     
     if (!user){
       throw new UnauthorizedException("Refresh token is not valid");
     }
 
-    return this.sessionHandler.createSession(user, systemInfo);;
+    return this.sessionService.createSession(user, systemInfo);;
   }
   /**
    * @param  {string} accessToken
@@ -104,7 +104,7 @@ export class AuthService {
    * @returns object with user info
    */
   async authorize(accessToken: string): Promise<User> {
-    const user = await this.sessionHandler.validateToken(accessToken);
+    const user = await this.sessionService.validateToken(accessToken);
     
     if (!user){
       throw new UnauthorizedException("Access token is not valid");
@@ -189,7 +189,7 @@ export class AuthService {
     .getOne();
     
     if(user){
-      return this.sessionHandler.createSession(user, systemInfo)
+      return this.sessionService.createSession(user, systemInfo)
     } 
     
     const candidateByEmail = await this.usersRepository.countBy({ email : profile.email });
@@ -208,7 +208,7 @@ export class AuthService {
     
     const savedUser = await this.usersRepository.save(newUser);
           
-    return this.sessionHandler.createSession(savedUser, systemInfo)
+    return this.sessionService.createSession(savedUser, systemInfo)
   }
 
   async createUserViaGoogle(profile: GoogleUser) : Promise<User>{
@@ -225,6 +225,20 @@ export class AuthService {
     });
   }
 
+  async getAllSession(user: User){
+    const userSessions = await this.usersRepository
+      .createQueryBuilder("user")
+      .where({ id: user.id })
+      .innerJoinAndSelect("user.sessions", "sessions")
+      .select(["user.username","sessions.device"])
+      .getMany()
+
+    if (!userSessions.length) {
+        throw new UnauthorizedException('Authorization failed');
+    }
+    return userSessions;
+  }
+
   async createUserViaFacebook(profile: FacebookUser) : Promise<User>{
     return this.usersRepository.create({
       email : profile.email,
@@ -236,6 +250,22 @@ export class AuthService {
         provider: "facebook",
         id : profile.id,
       }
+    });
+  }
+
+  async findAll(): Promise<User[]>{
+    return this.usersRepository.find({
+      select : ['username', 'email', 'firstName', 'lastName', 'profilePicture']
+    })
+  }
+  /**
+   * @param  {string} username
+   * username of user to find
+   */
+  async getUser(username: string): Promise<User>{
+    return this.usersRepository.findOne({ 
+      where: { username: username },
+      select : ['username', 'email', 'firstName', 'lastName', 'profilePicture']
     });
   }
 
