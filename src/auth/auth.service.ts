@@ -8,7 +8,7 @@ import { SessionHandler } from './handlers/session.handler';
 import { EmailHandler } from './handlers/mail.handler';
 import { Session } from 'src/entities/session.entity';
 import { HttpService } from '@nestjs/axios';
-import { OauthProfileInterface } from 'src/interfaces/oauth.profile.interface';
+import { GoogleUser, FacebookUser } from 'src/interfaces/oauth.profile.interfaces';
 
 @Injectable()
 export class AuthService {
@@ -122,6 +122,10 @@ export class AuthService {
   }
 
   async editUsername(username: string, user: DeepPartial<User>): Promise<User> {
+    if (!username) {
+      throw new BadRequestException("Wrong credentials")
+    }
+
     const candidate = await this.usersRepository.countBy({ username });
     if(candidate){
       throw new BadRequestException(`Username ${username} is already taken`);
@@ -152,6 +156,8 @@ export class AuthService {
         headers : {
           authorization: 'Bearer ' + token.split(" ")[1]
       }})
+
+
       return this.oauthUserHandler(userinfo.data, provider, systemInfo);
     } catch (error) {
       console.log(error);
@@ -163,40 +169,58 @@ export class AuthService {
    * @param  {any} profile
    * user profile from the provider
    */
-  async oauthUserHandler(profile: OauthProfileInterface, provider: string, systemInfo): Promise<Session>{
-    const userFromDb = await this.usersRepository
+  async oauthUserHandler(profile: FacebookUser & GoogleUser, provider: string, systemInfo): Promise<Session>{
+    const user = await this.usersRepository
     .createQueryBuilder('user')
     .where(`user.oauth ::jsonb @> \'{"id":"${profile.id}"}\'`)
     .getOne();
-    if(userFromDb){
-      return this.sessionHandler.createSession(userFromDb, systemInfo)
+    if(user){
+      return this.sessionHandler.createSession(user, systemInfo)
     } 
-    const candidateByEmail = await this.usersRepository.findOneBy({ email : profile.email });
+    const candidateByEmail = await this.usersRepository.countBy({ email : profile.email });
     if (candidateByEmail) {
       throw new BadRequestException(`Looks like user with email ${profile.email} have already been registered via another authentication method. Please use your initial type of authentication`);
     }
-    
-    if (provider === 'facebook') {
-      profile.given_name = profile.first_name;
-      profile.family_name = profile.last_name;
-      profile.picture = profile.picture.data.url;
-    }
 
-    const newUser = this.usersRepository.create({
+    let newUser: User;
+
+    if (provider === 'facebook'){
+      newUser = await this.createUserViaFacebook(profile);
+    } else {
+      newUser = await this.createUserViaGoogle(profile);
+    }
+    
+    const savedUser = await this.usersRepository.save(newUser);
+          
+    return this.sessionHandler.createSession(savedUser, systemInfo)
+  }
+
+  async createUserViaGoogle(profile: GoogleUser) : Promise<User>{
+    return this.usersRepository.create({
       email : profile.email,
       confirmedEmail: true,
       firstName: profile.given_name,
       lastName: profile.family_name,
       profilePicture: profile.picture,
       oauth: {
-        provider,
+        provider: "google",
         id : profile.id,
       }
     });
-    
-  const user = await this.usersRepository.save(newUser);
-        
-  return this.sessionHandler.createSession(user, systemInfo)
+  }
+
+  async createUserViaFacebook(profile: FacebookUser) : Promise<User>{
+    return this.usersRepository.create({
+      email : profile.email,
+      confirmedEmail: true,
+      firstName: profile.first_name,
+      lastName: profile.last_name,
+      profilePicture: profile.picture.data.url,
+      oauth: {
+        provider: "facebook",
+        id : profile.id,
+      }
+    });
   }
 
 }
