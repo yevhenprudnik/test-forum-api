@@ -21,7 +21,7 @@ export class PostController {
   }
 
   @Get('post-tag/:tag')
-  getPostByTag(@Param('tag') tag : string, @Query('cursor') cursor: Date, @Query('limit') limit: number){
+  getPostsByTag(@Param('tag') tag : string, @Query('cursor') cursor: Date, @Query('limit') limit: number){
     return this.postService.getPostsByTag(tag, cursor || new Date(), limit || 20);
   }
 
