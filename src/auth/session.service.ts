@@ -30,7 +30,7 @@ export class SessionService {
       .innerJoinAndSelect("session.user", "user", "user.id = :id", { id: user.id })
       .getOne();
 
-    const accessToken = this.jwt.sign({userId : user.id}, { expiresIn : '30m' });
+    const accessToken = this.jwt.sign({userId : user.id}, { expiresIn : '30d' }); // CHANGE TO 30m
     const refreshToken = this.jwt.sign({userId : user.id}, { expiresIn : '30d' });
 
     if (userSession) {
