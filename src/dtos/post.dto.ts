@@ -1,11 +1,11 @@
-import { IsDefined, IsNotEmpty } from "class-validator";
+import { IsArray, IsNotEmpty } from "class-validator";
 
 export class PostDto {
   @IsNotEmpty()
   title: string;
   @IsNotEmpty()
   description: string;
-  @IsDefined()
+  @IsArray()
   tags: string[];
   @IsNotEmpty()
   picture: string;

@@ -122,7 +122,7 @@ export class PostService {
    * tags to find posts
    * @param  {number} page?
    */
-  async getPostsByTag(tag: string, page? :number){
+  async getPostsByTag(tag: string, page: number){
     const postPerPage = 20;
 
     const posts = await this.postRepository
