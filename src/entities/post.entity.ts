@@ -1,11 +1,11 @@
+import { CacheData } from 'src/schemas/cacheData.schema';
 import { 
   Entity, 
   Column, 
   PrimaryGeneratedColumn, 
   CreateDateColumn, 
   UpdateDateColumn,
-  ManyToOne, 
-  JoinColumn} from 'typeorm';
+  ManyToOne } from 'typeorm';
 import { User } from './user.entity';
 
 @Entity()
@@ -13,47 +13,41 @@ export class Post {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({
-    type: "text"
-  })
+  @Column()
   title: string;
 
-  @Column("text")
+  @Column()
   description: string;
 
-  @Column("text", {
+  @Column({
     nullable: true
   })
   picture: string;
 
-  @Column("text", {
+  @Column({
     nullable: true
   })
   coverPicture: string;
 
-  @Column("text", {
-    array: true,
-    nullable: true
-  })
+  @Column("simple-array")
   tags: string[];
 
   @Column({
     type: "jsonb",
   })
-  cacheData: {
-    viewsCount : number,
-    likesCount: number,
-    savesCount: number
-  };
+  metadata: CacheData;
 
-  @CreateDateColumn()
+  @CreateDateColumn({
+    type: 'timestamptz'
+  })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({
+    type: 'timestamptz'
+  })
   updatedAt: Date;
 
-  @ManyToOne(type => User, (user) => user.posts, { onDelete: "CASCADE" }) 
-  @JoinColumn()
+  @ManyToOne(() => User, (user) => user.posts, { onDelete: "CASCADE" }) 
   author: User;
 
 }

@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post } from 'src/entities/post.entity';
 import { User } from 'src/entities/user.entity';
-import { ArrayContains, DeepPartial, Repository } from 'typeorm';
+import { ArrayContains, DeepPartial, LessThan, MoreThan, Repository } from 'typeorm';
 import { TagService } from './tag.service';
 
 @Injectable()
@@ -13,14 +13,15 @@ export class PostService {
     private readonly tagService: TagService
   ){}
   /**
-   * @param  {DeepPartial<Post>} postDefinition
-   * post dto
-   * @param  {DeepPartial<User>} user
-   * user from req
+   * @param definition
+   * post object
+   * @param user
+   * user object from request
+   * @returns Promise
    */
-  async createPost(postDefinition: DeepPartial<Post>, user: DeepPartial<User>) : Promise<Post> {
+  async createPost(definition: DeepPartial<Post>, user: DeepPartial<User>) : Promise<Post> {
 
-    const { title, description, picture, coverPicture, tags } = postDefinition;
+    const { title, description, picture, coverPicture, tags } = definition;
 
     const newPost = this.postRepository.create({
       title, 
@@ -29,7 +30,7 @@ export class PostService {
       coverPicture, 
       tags,
       author: user,
-      cacheData:  {
+      metadata:  {
         viewsCount: 0,
         likesCount: 0,
         savesCount: 0
@@ -64,40 +65,13 @@ export class PostService {
     return post;
   }
   /**
-   * @param  {number} page
-   * pagination page number
-   * @returns Promise
-   * array of posts
-   */
-  async getAllPost(page: number): Promise<Post[]>{
-    const postPerPage = 20;
-
-    const posts = await this.postRepository
-    .find({
-      order: { createdAt: "DESC" },
-      relations: ['author'],
-      select: {
-        author : {
-          username: true,
-        }
-      },
-      skip: postPerPage*page,
-      take: postPerPage
-    })
-
-    if (!posts.length) {
-      throw new NotFoundException("There are no posts yet");
-    }
-    return posts;
-  }
-  /**
    * @param  {string} username
-   * @param  {number} page
-   * @returns Promise
-   * array of posts
+   * @param  {Date} cursor
+   * date before post was created(provided as next)
+   * @param  {number} limit
+   * post objects quantity
    */
-  async getPostsByUser(username: string, page: number) : Promise<Post[]>{
-    const postPerPage = 20;
+  async getPostsByUser(username: string, cursor: Date, limit: number){
     
     const posts = await this.postRepository
     .createQueryBuilder("post")
@@ -106,49 +80,54 @@ export class PostService {
       "author.username =:username", 
       { username: username })
     .select(["post", "author.username"])
+    .where({ createdAt: LessThan(cursor) })
     .orderBy("post.createdAt", "DESC")
-    .skip(postPerPage*page)
-    .take(postPerPage)
+    .take(limit)
     .getMany();
 
-    if (!posts.length) {
-      throw new NotFoundException(`User ${username} does not have posts yet`);
+    if (posts.length < limit) {
+      return { data: posts, next: null }
     }
 
-    return posts;
+    const res = { data: posts, next: posts[posts.length - 1].createdAt }
+
+    return res;
   }
   /**
    * @param  {string} tag
-   * tags to find posts
-   * @param  {number} page?
+   * tag to find posts
+   * @param  {Date} cursor
+   * date before post was created(provided as next)
+   * @param  {number} limit
+   * post objects quantity
    */
-  async getPostsByTag(tag: string, page: number){
-    const postPerPage = 20;
-
+  async getPostsByTag(tag: string, cursor: Date, limit: number){
+    
     const posts = await this.postRepository
     .find({
       relations: { author: true },
       select: { author: {
         username: true
       }},
-      where: { tags: ArrayContains([tag]) },
+      where: { tags: tag, createdAt: LessThan(cursor) },
       order: { createdAt: "DESC" },
-      skip: postPerPage*page,
-      take: postPerPage
+      take: limit
     })
 
-    if (!posts.length) {
-      throw new NotFoundException(`Tad ${tag} does not exist yet`);
+    if (posts.length < limit) {
+      return { data: posts, next: null }
     }
 
-    return posts;
+    const res = { data: posts, next: posts[posts.length - 1].createdAt }
+
+    return res;
   }
   /**
    * @param  {number} id
    * post id
    * @param  {number} userId
    * user id
-   * @param  {DeepPartial<Post>} dataToEdit
+   * @param dataToEdit
    * post object fields to edit
    * @returns Promise
    * post object

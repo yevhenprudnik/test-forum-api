@@ -15,19 +15,19 @@ export class PostController {
     return this.postService.createPost(input, request.user);
   }
 
-  @Get('id/:id')
+  @Get('post-id/:id')
   getPostById(@Param('id') id: number){
     return this.postService.getPostById(id);
   }
 
-  @Get()
-  getAllPost(@Query('page') page: number){
-    return this.postService.getAllPost(page || 0);
+  @Get('post-tag/:tag')
+  getPostByTag(@Param('tag') tag : string, @Query('cursor') cursor: Date, @Query('limit') limit: number){
+    return this.postService.getPostsByTag(tag, cursor || new Date(), limit || 20);
   }
 
   @Get('user/:username')
-  getPostsByUser(@Param('username') username: string, @Query('page') page: number){
-    return this.postService.getPostsByUser(username, page || 0);
+  getPostsByUser(@Param('username') username: string, @Query('limit') limit: number, @Query('cursor') cursor: Date){
+    return this.postService.getPostsByUser(username, cursor || new Date(), limit || 20); 
   }
 
   @UseGuards(TokenAuthGuard)

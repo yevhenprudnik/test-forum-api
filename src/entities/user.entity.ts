@@ -8,37 +8,33 @@ export class User {
   id: number;
 
   @Column({
-    type: "text",
     nullable: true,
     unique: true
   })
   username: string;
 
   @Column({
-    type: "text",
     unique: true
   })
   email: string;
 
-  @Column("text", {
+  @Column({
     nullable: true
   })
   emailConfirmationLink: string;
 
-  @Column("text")
+  @Column()
   firstName: string;
 
-  @Column("text")
+  @Column()
   lastName: string;
 
   @Column({
-    type: "text",
     nullable: true,
   })
   password: string;
 
   @Column({
-    type: "text",
     nullable: true,
   })
   profilePicture: string;
@@ -73,9 +69,9 @@ export class User {
   @CreateDateColumn()
   createdAt: Date;
 
-  @OneToMany(type => Session, (session) => session.user)
+  @OneToMany( () => Session, (session) => session.user)
   sessions: Session[]
 
-  @OneToMany(type => Post, (post) => post.author)
+  @OneToMany( () => Post, (post) => post.author)
   posts: Post[];
 }
