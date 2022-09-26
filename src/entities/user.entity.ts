@@ -66,7 +66,9 @@ export class User {
     provider: string;
   };
 
-  @CreateDateColumn()
+  @CreateDateColumn({
+    type: 'timestamptz'
+  })
   createdAt: Date;
 
   @OneToMany( () => Session, (session) => session.user)

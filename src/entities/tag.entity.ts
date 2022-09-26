@@ -1,16 +1,16 @@
-import { Entity, Column, CreateDateColumn, PrimaryColumn } from 'typeorm';
+import { Entity, CreateDateColumn, PrimaryColumn, ManyToMany } from 'typeorm';
+import { Post } from './post.entity';
 
 @Entity()
 export class Tag {
   @PrimaryColumn()
   name: string;
 
-  @Column('int')
-  followersCount: number
+  @ManyToMany(() => Post, (post) => post.tags)
+  posts: Post[];
 
-  @Column('int')
-  postsCount: number
-
-  @CreateDateColumn()
+  @CreateDateColumn({
+    type: 'timestamptz'
+  })
   createdAt: Date;
 }

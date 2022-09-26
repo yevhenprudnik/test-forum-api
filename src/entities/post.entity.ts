@@ -1,11 +1,14 @@
-import { CacheData } from 'src/schemas/cacheData.schema';
+import { CacheData } from 'src/dtos/cacheData.dto';
 import { 
   Entity, 
   Column, 
   PrimaryGeneratedColumn, 
   CreateDateColumn, 
   UpdateDateColumn,
-  ManyToOne } from 'typeorm';
+  ManyToOne, 
+  ManyToMany,
+  JoinTable} from 'typeorm';
+import { Tag } from './tag.entity';
 import { User } from './user.entity';
 
 @Entity()
@@ -29,8 +32,9 @@ export class Post {
   })
   coverPicture: string;
 
-  @Column("simple-array")
-  tags: string[];
+  @ManyToMany(() => Tag, (tag) => tag.posts, { cascade: true, eager: true })
+  @JoinTable()
+  tags: Tag[];
 
   @Column({
     type: "jsonb",

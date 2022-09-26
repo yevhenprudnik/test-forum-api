@@ -1,9 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { TokenAuthGuard } from 'src/auth/guards/token.auth.guard';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { TokenAuthGuard } from 'src/user/guards/token.auth.guard';
 import { PostDto } from 'src/dtos/post.dto';
 import { PostService } from './post.service';
+import { SearchQuery } from 'src/dtos/serachQuery.dto';
 
-@Controller('post')
+@Controller('posts')
 export class PostController {
   constructor(
     private readonly postService: PostService
@@ -15,29 +16,35 @@ export class PostController {
     return this.postService.createPost(input, request.user);
   }
 
-  @Get('post-id/:id')
+  @Get(':id/post')
   getPostById(@Param('id') id: number){
     return this.postService.getPostById(id);
   }
 
-  @Get('post-tag/:tag')
-  getPostsByTag(@Param('tag') tag : string, @Query('cursor') cursor: Date, @Query('limit') limit: number){
-    return this.postService.getPostsByTag(tag, cursor || new Date(), limit || 20);
-  }
+  @Get('search')
+  getPostsByTag(
+    @Query() searchQuery : SearchQuery,
+    ){
+    const { limit, cursor, ...restQuery } = searchQuery;
 
-  @Get('user/:username')
-  getPostsByUser(@Param('username') username: string, @Query('limit') limit: number, @Query('cursor') cursor: Date){
-    return this.postService.getPostsByUser(username, cursor || new Date(), limit || 20); 
+    if (searchQuery.tag){
+      return this.postService.getPostsByTag(restQuery, cursor || new Date(), limit || 20)
+    }
+    
+    return this.postService.getPosts(restQuery, cursor || new Date(), limit || 20);
   }
 
   @UseGuards(TokenAuthGuard)
-  @Post('edit/:id')
-  editPost(@Param('id') id: number, @Req() request, @Body() input: PostDto){
+  @Patch(':id')
+  editPost(
+    @Param('id') id: number, 
+    @Req() request, 
+    @Body() input: PostDto){
     return this.postService.editPost(id, request.user.id, input);
   }
 
   @UseGuards(TokenAuthGuard)
-  @Delete('delete/:id')
+  @Delete(':id')
   deletePost(@Param('id') id: number, @Req() request){
     return this.postService.deletePost(id, request.user.id);
   }

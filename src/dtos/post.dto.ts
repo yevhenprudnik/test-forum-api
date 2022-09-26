@@ -1,4 +1,6 @@
+import { Exclude } from "class-transformer";
 import { IsArray, IsNotEmpty } from "class-validator";
+import { Tag } from "src/entities/tag.entity";
 
 export class PostDto {
   @IsNotEmpty()
@@ -6,7 +8,7 @@ export class PostDto {
   @IsNotEmpty()
   description: string;
   @IsArray()
-  tags: string[];
+  tags: Tag[];
   @IsNotEmpty()
   picture: string;
   @IsNotEmpty()

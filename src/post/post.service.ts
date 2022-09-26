@@ -1,16 +1,18 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { SearchQuery } from 'src/dtos/serachQuery.dto';
 import { Post } from 'src/entities/post.entity';
+import { Tag } from 'src/entities/tag.entity';
 import { User } from 'src/entities/user.entity';
-import { ArrayContains, DeepPartial, LessThan, MoreThan, Repository } from 'typeorm';
-import { TagService } from './tag.service';
+import { DeepPartial, LessThan, Repository } from 'typeorm';
 
 @Injectable()
 export class PostService {
   constructor(
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
-    private readonly tagService: TagService
+    @InjectRepository(Tag)
+    private readonly tagRepository: Repository<Tag>,
   ){}
   /**
    * @param definition
@@ -21,14 +23,8 @@ export class PostService {
    */
   async createPost(definition: DeepPartial<Post>, user: DeepPartial<User>) : Promise<Post> {
 
-    const { title, description, picture, coverPicture, tags } = definition;
-
     const newPost = this.postRepository.create({
-      title, 
-      description, 
-      picture, 
-      coverPicture, 
-      tags,
+      ...definition,
       author: user,
       metadata:  {
         viewsCount: 0,
@@ -36,10 +32,6 @@ export class PostService {
         savesCount: 0
       }
     });
-
-    if(tags){
-      await this.tagService.onCreatePost(tags);
-    }
 
     return this.postRepository.save(newPost);
   }
@@ -55,7 +47,8 @@ export class PostService {
     .createQueryBuilder("post")
     .where({id : id})
     .innerJoinAndSelect("post.author", "author")
-    .select(["post", "author.username"])
+    .innerJoinAndSelect("post.tags", "tags")
+    .select(["post", "author.username", "tags"])
     .getOne();
 
     if (!post) {
@@ -65,35 +58,6 @@ export class PostService {
     return post;
   }
   /**
-   * @param  {string} username
-   * @param  {Date} cursor
-   * date before post was created(provided as next)
-   * @param  {number} limit
-   * post objects quantity
-   */
-  async getPostsByUser(username: string, cursor: Date, limit: number){
-    
-    const posts = await this.postRepository
-    .createQueryBuilder("post")
-    .innerJoinAndSelect(
-      "post.author", "author", 
-      "author.username =:username", 
-      { username: username })
-    .select(["post", "author.username"])
-    .where({ createdAt: LessThan(cursor) })
-    .orderBy("post.createdAt", "DESC")
-    .take(limit)
-    .getMany();
-
-    if (posts.length < limit) {
-      return { data: posts, next: null }
-    }
-
-    const res = { data: posts, next: posts[posts.length - 1].createdAt }
-
-    return res;
-  }
-  /**
    * @param  {string} tag
    * tag to find posts
    * @param  {Date} cursor
@@ -101,20 +65,43 @@ export class PostService {
    * @param  {number} limit
    * post objects quantity
    */
-  async getPostsByTag(tag: string, cursor: Date, limit: number){
+  async getPosts(searchQuery, cursor: Date, limit: number){
     
     const posts = await this.postRepository
-    .find({
-      relations: { author: true },
-      select: { author: {
-        username: true
-      }},
-      where: { tags: tag, createdAt: LessThan(cursor) },
-      order: { createdAt: "DESC" },
-      take: limit
-    })
+    .createQueryBuilder('post')
+    .where({ createdAt: LessThan(cursor), ...searchQuery })
+    .innerJoinAndSelect('post.author','author')
+    .innerJoinAndSelect('post.tags','tags')
+    .select(["post", "author.username", "tags"])
+    .getMany()
 
-    if (posts.length < limit) {
+    if (!posts || posts.length < limit) {
+      return { data: posts, next: null }
+    }
+
+    const res = { data: posts, next: posts[posts.length - 1].createdAt }
+
+    return res;
+  }
+
+  async getPostsByTag(searchQuery, cursor: Date, limit: number){
+    
+    const { tag, ...restFilters } = searchQuery;
+    
+    const tagData = await this.tagRepository
+    .createQueryBuilder('tag')
+    .where({ name: tag, ...restFilters })
+    .innerJoinAndSelect('tag.posts','posts')
+    .innerJoinAndSelect('posts.author','author')
+    .andWhere("posts.createdAt < :cursorDate", { cursorDate: cursor })
+    .orderBy('posts.createdAt', 'DESC')
+    .select(["tag", "author.username", "posts"])
+    .limit(limit)
+    .getOne()
+
+    const { posts } = tagData;
+
+    if (!posts || posts.length < limit) {
       return { data: posts, next: null }
     }
 
@@ -132,45 +119,41 @@ export class PostService {
    * @returns Promise
    * post object
    */
-  async editPost(id: number, userId: number, dataToEdit: DeepPartial<Post>) : Promise<Post> {
+  async editPost(id: number, userId: number, dataToEdit: DeepPartial<Post>) {
+    try {
+      const post = await this.postRepository.findOne({
+        where: { id },
+        relations : { 
+          author: true, 
+          tags: true 
+        }
+      });
 
-    const { title, description, picture, coverPicture, tags } = dataToEdit;
+      if (!post) {
+        throw new NotFoundException('Post is not found')
+      }
+      if (post.author.id !== userId) {
+        throw new ForbiddenException("Post can be modified only by it's author")
+      }
 
-    const post = await this.postRepository.findOne({
-      where: { id },
-      relations : { author: true },  
-      select: { author: {
-        username: true,
-        id: true 
-      }},
-    });
-    if (!post) {
-      throw new NotFoundException('Post is not found');
-    }
+      const { tags, ...otherData } = dataToEdit;
+      
+      const updatedTags = tags.map(tag => {
+        const newTag = new Tag();
+        newTag.name = tag.name;
+        return newTag;
+      })
+      
+      post.tags = updatedTags;
 
-    if(post.author.id !== userId) {
-      throw new BadRequestException("Post can be edited only by it's author");
-    }
-    
-    if (title) {
-      post.title = title;
-    }
-    if(description) {
-      post.description = description;
-    }
-    if (picture) {
-      post.picture = picture;
-    }
-    if(coverPicture) {
-      post.coverPicture = coverPicture;
-    }
-    if(tags){
-      await this.tagService.onDeletePost(post.tags);
-      await this.tagService.onCreatePost(tags);
-      post.tags = tags;
-    }
+      for (const key in otherData) {
+        post[key] = otherData[key];
+      }
 
-    return this.postRepository.save(post);
+      return this.postRepository.save(post);
+    } catch (err) {
+      throw new BadRequestException(err.message);
+    }
   }
   /**
    * @param  {number} id
@@ -192,12 +175,9 @@ export class PostService {
       throw new BadRequestException("Post can be deleted only by it's author");
     }
 
-    const { tags } = post;
-
     const deleted = await this.postRepository.remove(post);
 
     if (deleted) {
-      await this.tagService.onDeletePost(tags);
       return { deleted: true };
     }
     return { deleted: false };

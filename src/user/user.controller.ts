@@ -7,7 +7,7 @@ import { SessionService } from './session.service';
 import { SystemInfo } from 'src/decorators/system-info';
 import { RefreshToken } from 'src/decorators/refresh-token';
 
-@Controller('auth')
+@Controller('user')
 export class UserController {
   constructor(
     private readonly userService: UserService,
@@ -124,6 +124,12 @@ export class UserController {
   @Get('/:username')
   getUser(@Param('username') username: string){
     return this.userService.getUser(username);
+  }
+
+  @UseGuards(TokenAuthGuard)
+  @Get(':username/posts')
+  getUserPost(@Param('username') username: string, @Query('limit') limit: number, @Query('cursor') cursor: Date){
+    return this.userService.getUserPosts(username, cursor || new Date(), limit || 20);
   }
 
 }
