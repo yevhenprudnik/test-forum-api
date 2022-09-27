@@ -21,17 +21,33 @@ export class PostController {
     return this.postService.getPostById(id);
   }
 
-  @Get('search')
-  getPostsByTag(
-    @Query() searchQuery : SearchQuery,
-    ){
+  @Get('search/separated')
+  async getPostsByTag( @Query() searchQuery : SearchQuery ){
+    const start = Date.now();
+
     const { limit, cursor, ...restQuery } = searchQuery;
 
     if (searchQuery.tag){
-      return this.postService.getPostsByTag(restQuery, cursor || new Date(), limit || 20)
+      const data = await this.postService.getPostsByTag(restQuery, cursor || new Date(), limit || 20);
+      const executionTime = Date.now() - start;
+      return { executionTime, data };
     }
-    
-    return this.postService.getPosts(restQuery, cursor || new Date(), limit || 20);
+    const data = await this.postService.getPosts(restQuery, cursor || new Date(), limit || 20);
+    const executionTime = Date.now() - start;
+    return { executionTime, data };
+  }
+
+  @Get('search/combined')
+  async getPosts( @Query() searchQuery : SearchQuery ){
+    const start = Date.now();
+
+    const { limit, cursor, ...restQuery } = searchQuery;
+
+    const data = await this.postService.combinedSearch(restQuery, cursor || new Date(), limit || 20);
+
+    const executionTime = Date.now() - start;
+
+    return { executionTime, data };
   }
 
   @UseGuards(TokenAuthGuard)

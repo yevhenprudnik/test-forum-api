@@ -4,7 +4,8 @@ import { SearchQuery } from 'src/dtos/serachQuery.dto';
 import { Post } from 'src/entities/post.entity';
 import { Tag } from 'src/entities/tag.entity';
 import { User } from 'src/entities/user.entity';
-import { DeepPartial, LessThan, Repository } from 'typeorm';
+import { ArrayContains, DeepPartial, LessThan, Repository } from 'typeorm';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class PostService {
@@ -13,6 +14,8 @@ export class PostService {
     private readonly postRepository: Repository<Post>,
     @InjectRepository(Tag)
     private readonly tagRepository: Repository<Tag>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>
   ){}
   /**
    * @param definition
@@ -66,16 +69,17 @@ export class PostService {
    * post objects quantity
    */
   async getPosts(searchQuery, cursor: Date, limit: number){
-    
+
     const posts = await this.postRepository
     .createQueryBuilder('post')
     .where({ createdAt: LessThan(cursor), ...searchQuery })
     .innerJoinAndSelect('post.author','author')
-    .innerJoinAndSelect('post.tags','tags')
-    .select(["post", "author.username", "tags"])
+    .select(["post", "author.username"])
+    .orderBy('post.createdAt', 'DESC')
+    .take(limit)
     .getMany()
 
-    if (!posts || posts.length < limit) {
+    if (posts.length < limit) {
       return { data: posts, next: null }
     }
 
@@ -83,7 +87,11 @@ export class PostService {
 
     return res;
   }
-
+  /**
+   * @param  {} searchQuery
+   * @param  {Date} cursor
+   * @param  {number} limit
+   */
   async getPostsByTag(searchQuery, cursor: Date, limit: number){
     
     const { tag, ...restFilters } = searchQuery;
@@ -92,16 +100,20 @@ export class PostService {
     .createQueryBuilder('tag')
     .where({ name: tag, ...restFilters })
     .innerJoinAndSelect('tag.posts','posts')
-    .innerJoinAndSelect('posts.author','author')
     .andWhere("posts.createdAt < :cursorDate", { cursorDate: cursor })
+    .select(["tag", "posts"])
     .orderBy('posts.createdAt', 'DESC')
-    .select(["tag", "author.username", "posts"])
     .limit(limit)
     .getOne()
 
+
+    if (!tagData || !tagData.posts) {
+      return { data: [], next: null }
+    }
+    
     const { posts } = tagData;
 
-    if (!posts || posts.length < limit) {
+    if(tagData.posts.length < limit){
       return { data: posts, next: null }
     }
 
@@ -109,6 +121,43 @@ export class PostService {
 
     return res;
   }
+
+
+
+  async combinedSearch(searchQuery, cursor: Date, limit: number){
+
+    const { tag, ...restFilters } = searchQuery;
+
+    const query = this.postRepository
+    .createQueryBuilder('post')
+    .where({ createdAt: LessThan(cursor), ...restFilters })
+    if (tag) {
+      query
+      .innerJoinAndSelect('post.tags','tags', 'tags.name = :name', {name: tag})
+      .select(["post"]);
+    }
+    
+    query
+    .orderBy('post.createdAt', 'DESC')
+    .take(limit);
+
+    const posts = await query.getMany();
+
+    if(!posts){
+      return { data: [], next: null}
+    }
+
+    if (posts.length < limit) {
+      return { data: posts, next: null }
+    }
+
+    const res = { data: posts, next: posts[posts.length - 1].createdAt }
+
+    return res;
+  }
+
+
+
   /**
    * @param  {number} id
    * post id
