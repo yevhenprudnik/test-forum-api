@@ -73,8 +73,6 @@ export class PostService {
     const posts = await this.postRepository
     .createQueryBuilder('post')
     .where({ createdAt: LessThan(cursor), ...searchQuery })
-    .innerJoinAndSelect('post.author','author')
-    .select(["post", "author.username"])
     .orderBy('post.createdAt', 'DESC')
     .take(limit)
     .getMany()
