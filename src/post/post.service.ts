@@ -1,11 +1,9 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { SearchQuery } from 'src/dtos/serachQuery.dto';
 import { Post } from 'src/entities/post.entity';
 import { Tag } from 'src/entities/tag.entity';
 import { User } from 'src/entities/user.entity';
-import { ArrayContains, DeepPartial, LessThan, Repository } from 'typeorm';
-import { randomUUID } from 'crypto';
+import { DeepPartial, LessThan, Repository } from 'typeorm';
 
 @Injectable()
 export class PostService {
@@ -14,8 +12,6 @@ export class PostService {
     private readonly postRepository: Repository<Post>,
     @InjectRepository(Tag)
     private readonly tagRepository: Repository<Tag>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>
   ){}
   /**
    * @param definition
@@ -81,14 +77,15 @@ export class PostService {
       return { data: posts, next: null }
     }
 
-    const res = { data: posts, next: posts[posts.length - 1].createdAt }
-
-    return res;
+    return { data: posts, next: posts[posts.length - 1].createdAt }
   }
   /**
-   * @param  {} searchQuery
+   * @param  searchQuery
+   * filters to find a post
    * @param  {Date} cursor
-   * @param  {number} limit
+   * date before post was created(provided as next)
+   * @param {number} limit
+   * post objects quantity
    */
   async getPostsByTag(searchQuery, cursor: Date, limit: number){
     
@@ -104,42 +101,44 @@ export class PostService {
     .limit(limit)
     .getOne()
 
-
     if (!tagData || !tagData.posts) {
       return { data: [], next: null }
     }
     
     const { posts } = tagData;
 
-    if(tagData.posts.length < limit){
+    if( posts.length < limit){
       return { data: posts, next: null }
     }
 
-    const res = { data: posts, next: posts[posts.length - 1].createdAt }
-
-    return res;
+    return { data: posts, next: posts[posts.length - 1].createdAt };
   }
-
-
-
+  /**
+   * @param  searchQuery
+   * filters to find a post
+   * @param  {Date} cursor
+   * date before post was created(provided as next)
+   * @param {number} limit
+   * post objects quantity
+   */
   async combinedSearch(searchQuery, cursor: Date, limit: number){
 
     const { tag, ...restFilters } = searchQuery;
 
-    const query = this.postRepository
+    const searchPostsQuery = this.postRepository
     .createQueryBuilder('post')
     .where({ createdAt: LessThan(cursor), ...restFilters })
     if (tag) {
-      query
+      searchPostsQuery
       .innerJoinAndSelect('post.tags','tags', 'tags.name = :name', {name: tag})
       .select(["post"]);
     }
     
-    query
+    searchPostsQuery
     .orderBy('post.createdAt', 'DESC')
     .take(limit);
 
-    const posts = await query.getMany();
+    const posts = await searchPostsQuery.getMany();
 
     if(!posts){
       return { data: [], next: null}
@@ -149,13 +148,8 @@ export class PostService {
       return { data: posts, next: null }
     }
 
-    const res = { data: posts, next: posts[posts.length - 1].createdAt }
-
-    return res;
+    return { data: posts, next: posts[posts.length - 1].createdAt }
   }
-
-
-
   /**
    * @param  {number} id
    * post id
@@ -166,7 +160,7 @@ export class PostService {
    * @returns Promise
    * post object
    */
-  async editPost(id: number, userId: number, dataToEdit: DeepPartial<Post>) {
+  async editPost(id: number, userId: number, dataToEdit: DeepPartial<Post>): Promise<Post> {
     try {
       const post = await this.postRepository.findOne({
         where: { id },

@@ -17,7 +17,7 @@ export class SessionService {
   /**
    * @param  {User} user
    * user object
-   * @param  {} systemInfo
+   * @param systemInfo
    * information from user-agent header
    */
   async createSession(user: User, systemInfo: SystemInfo): Promise<Session>{
