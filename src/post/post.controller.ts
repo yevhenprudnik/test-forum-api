@@ -3,10 +3,14 @@ import { TokenAuthGuard } from 'src/user/guards/token.auth.guard';
 import { PostDto } from 'src/dtos/post.dto';
 import { PostService } from './post.service';
 import { SearchQuery } from 'src/dtos/serachQuery.dto';
+import { TagService } from './tag.service';
 
 @Controller('posts')
 export class PostController {
-  constructor( private readonly postService: PostService ){}
+  constructor( 
+    private readonly postService: PostService,
+    private readonly tagService: TagService,
+  ){}
 
   @UseGuards(TokenAuthGuard)
   @Post()
@@ -25,7 +29,7 @@ export class PostController {
     const { limit, cursor, ...restQuery } = searchQuery;
 
     if (searchQuery.tag){
-      return this.postService.getPostsByTag(restQuery, cursor || new Date(), limit || 20);
+      return this.tagService.getPostsByTag(restQuery, cursor || new Date(), limit || 20);
     }
     return this.postService.getPosts(restQuery, cursor || new Date(), limit || 20);
   }
