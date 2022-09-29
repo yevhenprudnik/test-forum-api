@@ -1,9 +1,9 @@
-import { Controller, Get, Headers } from '@nestjs/common';
-import { SystemInfo } from './decorators/system-info';
+import { Controller, Get } from '@nestjs/common';
+
 @Controller()
 export class AppController {
   @Get()
-  getHello(@SystemInfo() systemInfo) {
-    return { greeting: 'Hell0, World!', systemInfo};
+  getHello() {
+    return { greeting: 'Hell0, World!'};
   }
 }

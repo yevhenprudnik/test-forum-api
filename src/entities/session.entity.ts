@@ -6,17 +6,15 @@ export class Session {
   @PrimaryColumn()
   id: number;
 
-  @ManyToOne(
-    type => User, 
-    (user) => user.sessions, 
+  @ManyToOne( () => User, (user) => user.sessions, 
     { onDelete: "CASCADE" }
   ) @JoinColumn()
   user: User;
 
-  @Column("text")
+  @Column()
   accessToken: string;
 
-  @Column("text")
+  @Column()
   refreshToken: string;
 
   @Column({
@@ -28,6 +26,8 @@ export class Session {
     model?: string;
   };
 
-  @CreateDateColumn()
+  @CreateDateColumn({
+    type: 'timestamptz'
+  })
   createdAt: Date;
 }

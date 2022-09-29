@@ -278,5 +278,37 @@ export class UserService {
       select : ['username', 'email', 'firstName', 'lastName', 'profilePicture']
     });
   }
+  /**
+   * @param  {string} username
+   * @param  {Date} cursor
+   * @param  {number} limit
+   */
+  async getUserPosts(username: string, cursor: Date, limit: number){
+
+    const user = await this.usersRepository
+    .createQueryBuilder('user')
+    .where({ username })
+    .innerJoinAndSelect("user.posts", "posts")
+    .innerJoinAndSelect("posts.tags", "tags")
+    .andWhere("posts.createdAt < :cursorDate", { cursorDate: cursor })
+    .select([ 'user.username', 'posts', 'tags' ])
+    .orderBy('posts.createdAt', 'DESC')
+    .limit(limit)
+    .getOne();
+
+    if(!user){
+      return { data: [], next: null }
+    }
+
+    const posts = user.posts;
+
+    if (!posts || posts.length < limit) {
+      return { data: posts, next: null }
+    }
+
+    const res = { data: posts, next: posts[posts.length - 1].createdAt }
+
+    return res;
+  }
 
 }
